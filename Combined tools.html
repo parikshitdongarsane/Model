@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Mortality & Morphology — interactive</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+<style>
+  :root{--gap:14px;--pad:14px;--panel-bg:#fbfbfb;--border:#e6e6e6;--radius:10px;--font-sans:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+  html,body{height:100%;margin:0;font-family:var(--font-sans);background:#fff;color:#111}
+  .wrap{max-width:1200px;margin:16px auto;padding:8px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);height:86vh}
+  .col{display:grid;grid-template-rows: auto 1fr; gap:var(--gap)}
+  .panel{background:var(--panel-bg);border:1px solid var(--border);border-radius:var(--radius);padding:var(--pad);box-shadow:0 1px 0 rgba(0,0,0,0.03);display:flex;flex-direction:column}
+  .toolArea{min-height:50%; overflow:visible}
+  .mini{padding:8px 10px;border-radius:8px;border:1px solid var(--border)}
+  .row {display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  canvas {max-width:100%}
+  .unit {margin-left:6px;color:#333;font-weight:600}
+  label.inline {display:flex;align-items:center;gap:8px}
+  .sliderRow{display:flex;align-items:center;gap:12px;margin:6px 0}
+  .sliderRow input[type="range"]{flex:1}
+  .sliderValue{min-width:72px;text-align:right;font-weight:600}
+  #hiControls{max-width:520px}
+  .morphFrame{display:flex;gap:10px;align-items:flex-start}
+  .morphView{background:#ffffff;border:1px solid #e6e6e6;border-radius:8px;padding:8px;box-shadow:0 6px 20px rgba(16,24,40,0.04)}
+  .morphLegend{font-size:0.85rem;color:#333}
+  /* persistent label for chart point */
+  .pointLabel{
+    position: absolute;
+    pointer-events: none;
+    background: rgba(255,255,255,0.95);
+    border: 1px solid rgba(0,0,0,0.08);
+    padding:6px 8px;
+    border-radius:6px;
+    font-size:13px;
+    box-shadow: 0 6px 20px rgba(16,24,40,0.06);
+    transform: translate(-50%,-120%);
+    white-space:nowrap;
+  }
+  /* place container relative for absolute label */
+  .chartWrapper{ position: relative; }
+  @media (max-width:900px){ .grid{grid-template-columns:1fr; height:auto} .col{grid-template-rows: auto auto} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h2 style="margin:6px 0 12px;font-weight:600">Mortality & Morphology — interactive</h2>
+
+    <div class="grid">
+      <!-- LEFT: Mortality -->
+      <div class="col">
+        <div class="panel toolArea">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <strong>Mortality Calculator (Nagpur)</strong>
+          </div>
+
+          <div style="margin-top:12px;display:flex;flex-direction:column;gap:12px">
+            <div class="row">
+              <label for="left-model"><strong>Model</strong></label>
+              <select id="left-model" class="mini">
+                <option value="Maximum Temperature">Maximum Temperature</option>
+                <option value="Humidex">Humidex</option>
+                <option value="RSI">RSI</option>
+              </select>
+
+              <label for="left-inputValue" style="margin-left:8px;"><strong>Input</strong></label>
+              <input type="number" id="left-inputValue" class="mini" step="0.01" style="width:120px" placeholder="enter value">
+              <span id="left-unit" class="unit">°C</span>
+
+              <button type="button" id="left-calculateButton" class="mini" style="background:#007bff;color:#fff;border:none;">Calculate</button>
+              <button id="left-updateChart" class="mini">Update graph</button>
+            </div>
+
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+              <p id="left-mortalityResult" style="margin:0;font-weight:600;color:#007bff">Probable deaths: —</p>
+              <p id="left-error" style="margin:0;color:#d00"></p>
+            </div>
+
+            <div style="background:#fff;padding:8px;border-radius:8px;border:1px solid var(--border)">
+              <div class="chartWrapper">
+                <canvas id="leftChart" aria-label="Mortality model predictions chart" style="height:320px"></canvas>
+                <!-- persistent label (always visible) -->
+                <div id="pointLabel" class="pointLabel" style="display:none">X: —<br>Probable deaths: —</div>
+              </div>
+            </div>
+
+            <div id="left-equationContainer">
+              <h4 style="margin:6px 0 6px">Model Equation</h4>
+              <p id="left-equation" style="margin:0">Please select a model to see its equation.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel desc" style="min-height:80px">
+          <strong>Description</strong>
+          <div style="margin-top:10px;color:#444;line-height:1.4;">
+            Drag the red marker on the curve or enter a value. The label beside the marker always shows the input (with unit) and probable deaths.
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Morphology -->
+      <div class="col">
+        <div class="panel toolArea">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <strong>Morphology Preview & HI Prediction</strong>
+          </div>
+
+          <div style="margin-top:12px;display:flex;gap:12px;flex-direction:column">
+            <div class="morphFrame">
+              <div class="morphView">
+                <canvas id="morphCanvas" width="520" height="360"></canvas>
+              </div>
+              <div class="morphLegend">
+                <div><strong>Legend</strong></div>
+                <div style="margin-top:8px">■ buildings (shade = height)</div>
+                <div>● trees (green)</div>
+                <div style="margin-top:12px"><button id="exportMorph" class="mini">Export PNG</button></div>
+                <div style="margin-top:12px;font-size:0.9rem;color:#666">
+                  HI color mapping: plots/buildings change from yellow → orange → red as HI increases.
+                </div>
+              </div>
+            </div>
+
+            <!-- sliders -->
+            <div id="hiControls" style="margin-top:6px">
+              <div class="sliderRow">
+                <label class="inline" for="right-bsf-range">BSF</label>
+                <input type="range" id="right-bsf-range" min="0.05" max="0.95" step="0.01" value="0.50">
+                <div class="sliderValue"><span id="right-bsf-val">0.50</span></div>
+              </div>
+
+              <div class="sliderRow">
+                <label class="inline" for="right-isf-range">ISF</label>
+                <input type="range" id="right-isf-range" min="0" max="1" step="0.01" value="0.10">
+                <div class="sliderValue"><span id="right-isf-val">0.10</span></div>
+              </div>
+
+              <div class="sliderRow">
+                <label class="inline" for="right-vdr-range">VDR</label>
+                <input type="range" id="right-vdr-range" min="0" max="1" step="0.01" value="0.30">
+                <div class="sliderValue"><span id="right-vdr-val">0.30</span></div>
+              </div>
+
+              <div class="sliderRow">
+                <label class="inline" for="right-fdr-range">FDR (height)</label>
+                <input type="range" id="right-fdr-range" min="0.1" max="3.0" step="0.1" value="1.0">
+                <div class="sliderValue"><span id="right-fdr-val">1.00</span></div>
+              </div>
+
+              <div class="sliderRow">
+                <label class="inline" for="right-ar-range">AR (road width)</label>
+                <input type="range" id="right-ar-range" min="0.5" max="2.5" step="0.05" value="1.0">
+                <div class="sliderValue"><span id="right-ar-val">1.00</span></div>
+              </div>
+
+              <div style="margin-top:10px;display:flex;gap:10px;align-items:center">
+                <button type="button" id="right-reset" class="mini">Reset sliders</button>
+              </div>
+            </div>
+
+            <p id="right-result" style="margin-top:6px;font-weight:600;color:#007bff">Predicted HI: —</p>
+          </div>
+        </div>
+
+        <div class="panel desc" style="min-height:40px">
+          <strong>Notes</strong>
+          <div style="margin-top:8px;color:#444;line-height:1.4;">Background white; roads grey. Plots/buildings color by HI (yellow→orange→red). BSF only affects building density.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <script>
+  /********************* Mortality calculator (left) *********************/
+  const models = {
+    "Maximum Temperature": { coeffs: [-1595.28, 136.82, -3.78, 0.0347], range: [30,50], xlabel: "Temperature", unit: "°C" },
+    "Humidex":             { coeffs: [-76.44, 8.53, -0.195, 0.0015], range: [40,70], xlabel: "Humidex", unit: "" },
+    "RSI":                 { coeffs: [-1090.52, 101.05, -2.97, 0.0289], range: [30,45], xlabel: "RSI", unit: "" }
+  };
+  function evalPoly(coeffs,x){ return coeffs[0] + coeffs[1]*x + coeffs[2]*Math.pow(x,2) + coeffs[3]*Math.pow(x,3); }
+
+  const chartCanvas = document.getElementById('leftChart');
+  const ctx = chartCanvas.getContext('2d');
+
+  const leftChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      datasets: [
+        { label:'Model curve', data:[], tension:0.25, fill:false, pointRadius:0, borderWidth:2, parsing:false, borderColor:'#0b61d9' },
+        { label:'Input point', data:[], type:'scatter', pointRadius:7, showLine:false, backgroundColor:'#d9534f', parsing:false }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      scales:{
+        x:{ type:'linear', title:{display:true,text:'Input value'} },
+        y:{ title:{display:true,text:'Predicted deaths'} }
+      },
+      plugins:{ legend:{display:true,position:'top'}, tooltip:{ enabled:false } },
+      elements: { point: { hitRadius: 12 } }
+    }
+  });
+
+  // format equation as mathy HTML
+  function formatEquation(coeffs){
+    function absFmt(n){ const v=Math.abs(n); const s = v>=1? v.toFixed(2): v.toFixed(4); return s.replace(/\.?0+$/,''); }
+    const c0 = coeffs[0];
+    let html = 'y = ';
+    const c0Abs = absFmt(c0);
+    html += (c0 < 0 ? ('-' + c0Abs) : c0Abs);
+    for(let i=1;i<coeffs.length;i++){
+      const c = coeffs[i];
+      if(Math.abs(c) < 1e-8) continue;
+      const sign = c>=0 ? ' + ' : ' - ';
+      const coefAbs = absFmt(c);
+      const coefDisplay = (Math.abs(c)===1 && i>0) ? '' : coefAbs;
+      const expo = i===1 ? 'x' : ('x<sup>' + i + '</sup>');
+      html += sign + coefDisplay + '·' + expo;
+    }
+    return html;
+  }
+
+  // persistent point label element
+  const pointLabel = document.getElementById('pointLabel');
+
+  // state for dragging
+  let draggingPoint = false;
+
+  // Utility: convert canvas pixel to chart value
+  function pixelToValue(evt){
+    const rect = chartCanvas.getBoundingClientRect();
+    const xPx = evt.clientX - rect.left;
+    const yPx = evt.clientY - rect.top;
+    const xScale = leftChart.scales.x;
+    const yScale = leftChart.scales.y;
+    const xVal = xScale.getValueForPixel(xPx);
+    const yVal = yScale.getValueForPixel(yPx);
+    return { xPx, yPx, xVal, yVal };
+  }
+
+  // Utility: position label next to point (absolute)
+  function positionLabelAtPoint(xPx, yPx, textHtml){
+    const wrapper = chartCanvas.parentElement; // chartWrapper
+    const wrapperRect = wrapper.getBoundingClientRect();
+    pointLabel.style.left = (wrapperRect.left + xPx - wrapperRect.left) + 'px';
+    pointLabel.style.top = (wrapperRect.top + yPx - wrapperRect.top) + 'px';
+    pointLabel.innerHTML = textHtml;
+    pointLabel.style.display = 'block';
+  }
+
+  // Update chart curve and clear point
+  function leftUpdateChart(){
+    const select = document.getElementById('left-model');
+    const modelKey = select.value || "Maximum Temperature";
+    const info = models[modelKey];
+    const [minX,maxX] = info.range;
+    const n = 300;
+    const pts = new Array(n);
+    for(let i=0;i<n;i++){
+      const x = minX + (maxX-minX) * i/(n-1);
+      pts[i] = { x: Number(x.toFixed(4)), y: Number(evalPoly(info.coeffs,x).toFixed(6)) };
+    }
+    leftChart.data.datasets[0].data = pts;
+    leftChart.data.datasets[1].data = [];
+    leftChart.options.scales.x.title.text = info.unit ? (info.xlabel + ' (' + info.unit + ')') : info.xlabel;
+    leftChart.update();
+    document.getElementById('left-equation').innerHTML = formatEquation(info.coeffs);
+    document.getElementById('left-unit').textContent = info.unit || '';
+    // hide label until a point is added
+    pointLabel.style.display = 'none';
+  }
+
+  // place point exactly on curve and update UI
+  function placePointAt(x){
+    const model = document.getElementById('left-model').value;
+    const info = models[model];
+    // clamp x into model's valid range for smoother UX
+    const minX = info.range[0], maxX = info.range[1];
+    if(x < minX) x = minX;
+    if(x > maxX) x = maxX;
+    const exactY = evalPoly(info.coeffs, x);
+    // update scatter dataset
+    leftChart.data.datasets[1].data = [{ x: Number(x.toFixed(6)), y: Number(exactY) }];
+    leftChart.update();
+    // set input and result label
+    document.getElementById('left-inputValue').value = Number(x.toFixed(2));
+    document.getElementById('left-mortalityResult').innerText = `Probable deaths: ${Math.round(exactY)}`;
+    // position persistent label near the point
+    // need to compute pixel position for value x,y
+    const xScale = leftChart.scales.x, yScale = leftChart.scales.y;
+    const xPx = xScale.getPixelForValue(x);
+    const yPx = yScale.getPixelForValue(exactY);
+    const unit = info.unit ? ` (${info.unit})` : '';
+    const labelHtml = `<strong>${info.xlabel}${unit}:</strong> ${Number(x.toFixed(2))} &nbsp; <strong>Probable deaths:</strong> ${Math.round(exactY)}`;
+    positionLabelAtPoint(xPx, yPx, labelHtml);
+  }
+
+  // handlers: input value changed manually
+  document.getElementById('left-calculateButton').addEventListener('click', ()=>{
+    const model = document.getElementById('left-model').value;
+    const inputValue = parseFloat(document.getElementById('left-inputValue').value);
+    if(!model || isNaN(inputValue)) return;
+    placePointAt(inputValue);
+  });
+
+  document.getElementById('left-updateChart').addEventListener('click', leftUpdateChart);
+
+  // initialize chart with default model
+  leftUpdateChart();
+
+  // Mouse interactions for dragging the point
+  chartCanvas.addEventListener('mousedown', (evt)=>{
+    // if there is no point yet, do nothing
+    if(!leftChart.data.datasets[1].data.length) return;
+    const pos = pixelToValue(evt);
+    // determine distance in pixels between click and point
+    const pt = leftChart.data.datasets[1].data[0];
+    const xPix = leftChart.scales.x.getPixelForValue(pt.x);
+    const yPix = leftChart.scales.y.getPixelForValue(pt.y);
+    const dx = pos.xPx - xPix;
+    const dy = pos.yPx - yPix;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    // allow start drag only if within 14 px
+    if(dist < 14){
+      draggingPoint = true;
+      evt.preventDefault();
+    }
+  });
+
+  window.addEventListener('mousemove', (evt)=>{
+    if(!draggingPoint) return;
+    const pos = pixelToValue(evt);
+    // move only along x domain (find y via polynomial)
+    const model = document.getElementById('left-model').value;
+    const info = models[model];
+    let xVal = pos.xVal;
+    // clamp to model domain
+    if(xVal < info.range[0]) xVal = info.range[0];
+    if(xVal > info.range[1]) xVal = info.range[1];
+    placePointAt(xVal);
+  });
+
+  window.addEventListener('mouseup', (evt)=>{
+    if(draggingPoint){
+      draggingPoint = false;
+    }
+  });
+
+  // also update when model changes: re-draw curve and place a reasonable default point (mid-range)
+  document.getElementById('left-model').addEventListener('change', ()=>{
+    leftUpdateChart();
+    const model = document.getElementById('left-model').value;
+    const info = models[model];
+    const mid = (info.range[0] + info.range[1]) / 2;
+    placePointAt(mid);
+  });
+
+  // initialize with mid point
+  (function initLeft(){
+    const model = document.getElementById('left-model').value;
+    const info = models[model];
+    const mid = (info.range[0] + info.range[1]) / 2;
+    placePointAt(mid);
+  })();
+
+
+  /********************* Morphology (right) *********************/
+  const morphCanvas = document.getElementById('morphCanvas');
+  const mctx = morphCanvas.getContext('2d');
+
+  function lerp(a,b,t){ return Math.round(a + (b-a)*t); }
+  function rgbToCss(r,g,b){ return `rgb(${r},${g},${b})`; }
+  function mixRgb(c1,c2,t){ return rgbToCss( lerp(c1[0],c2[0],t), lerp(c1[1],c2[1],t), lerp(c1[2],c2[2],t) ); }
+
+  function hiToColor(hi){
+    const low = 30, mid = 40, high = 55;
+    const yellow = [255,243,128];
+    const orange = [255,167,79];
+    const red    = [255,80,80];
+    if(hi <= low) return rgbToCss(...yellow);
+    if(hi >= high) return rgbToCss(...red);
+    if(hi <= mid){
+      const t = (hi - low) / (mid - low);
+      return mixRgb(yellow, orange, t);
+    } else {
+      const t = (hi - mid) / (high - mid);
+      return mixRgb(orange, red, t);
+    }
+  }
+
+  function stableRandom(x,y){
+    const s = Math.sin(x*374761.1 + y*668265.7) * 43758.5453;
+    return s - Math.floor(s);
+  }
+
+  function mapRange(v, inMin, inMax, outMin, outMax){
+    const t = (v - inMin) / (inMax - inMin);
+    return outMin + t*(outMax - outMin);
+  }
+
+  function drawMorphology(params){
+    const w = morphCanvas.width;
+    const h = morphCanvas.height;
+    mctx.clearRect(0,0,w,h);
+
+    const cols = 22, rows = 14, margin = 12;
+    const availableW = w - margin*2, availableH = h - margin*2;
+    const baseCellW = Math.floor(availableW / cols), baseCellH = Math.floor(availableH / rows);
+    const cellW = Math.max(10, baseCellW - 2), cellH = Math.max(10, baseCellH - 2);
+
+    const ar = params.ar;
+    const interval = Math.round( mapRange(ar, 0.5, 2.5, 5, 2) );
+    const roadBandPx = Math.max( Math.round( cellH * mapRange(ar, 0.5, 2.5, 0.35, 0.9) ), Math.round(cellH*0.25) );
+
+    const gridWidth = cols * cellW, gridHeight = rows * cellH;
+    let offsetX = Math.round((w - gridWidth) / 2), offsetY = Math.round((h - gridHeight) / 2);
+    offsetX = Math.max(margin, offsetX); offsetY = Math.max(margin, offsetY);
+
+    // background white
+    mctx.fillStyle = '#ffffff';
+    mctx.fillRect(0,0,w,h);
+
+    // roads always grey
+    const roadColor = '#d9d9d9';
+    const roadRows = new Set(), roadCols = new Set();
+    for(let r=0;r<rows;r++) if(r % interval === 0) roadRows.add(r);
+    for(let c=0;c<cols;c++) if(c % interval === 0) roadCols.add(c);
+
+    mctx.save();
+    mctx.fillStyle = roadColor;
+    for(const r of roadRows){
+      const y = offsetY + r * cellH - Math.floor((roadBandPx - cellH)/2);
+      mctx.fillRect(offsetX - 6, y, gridWidth + 12, roadBandPx);
+    }
+    for(const c of roadCols){
+      const x = offsetX + c * cellW - Math.floor((roadBandPx - cellW)/2);
+      mctx.fillRect(x, offsetY - 6, roadBandPx, gridHeight + 12);
+    }
+    mctx.restore();
+
+    // plot base color from VDR (brown -> green)
+    const brown = [232,210,186], green = [220,250,220];
+    const vdrT = Math.min(1, Math.max(0, params.vdr));
+    const plotBase = [ Math.round((1-vdrT)*brown[0] + vdrT*green[0]),
+                       Math.round((1-vdrT)*brown[1] + vdrT*green[1]),
+                       Math.round((1-vdrT)*brown[2] + vdrT*green[2]) ];
+
+    // HI tint color
+    const hiRgb = cssToRgbArray(hiToColor(params.hi || 30));
+
+    // draw plots (non-road cells)
+    const occupancy = new Array(rows).fill(0).map(()=>new Array(cols).fill(false));
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        if(roadRows.has(r) || roadCols.has(c)) continue;
+        const x = offsetX + c * cellW;
+        const y = offsetY + r * cellH;
+        const blendT = Math.min(1, Math.max(0, mapRange(params.hi || 30, 30, 55, 0, 0.65)));
+        const rcol = Math.round(plotBase[0] * (1 - blendT) + hiRgb[0] * blendT);
+        const gcol = Math.round(plotBase[1] * (1 - blendT) + hiRgb[1] * blendT);
+        const bcol = Math.round(plotBase[2] * (1 - blendT) + hiRgb[2] * blendT);
+        mctx.fillStyle = `rgb(${rcol},${gcol},${bcol})`;
+        mctx.fillRect(x + 2, y + 2, cellW - 4, cellH - 4);
+      }
+    }
+
+    // buildings: BSF controls density only (deterministic)
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        if(roadRows.has(r) || roadCols.has(c)) continue;
+        const x = offsetX + c * cellW;
+        const y = offsetY + r * cellH;
+        let p = params.bsf;
+        p += (stableRandom(r+3,c+7)-0.5)*0.06;
+        p = Math.min(0.98, Math.max(0.02, p));
+        const occ = (stableRandom(r*5+11,c*7+13) < p);
+        if(!occ) continue;
+        occupancy[r][c] = true;
+        const footprintScale = 0.6 - params.isf*0.35 + (stableRandom(r*3,c*7)-0.5)*0.12;
+        const bw = Math.max(6, Math.floor(cellW * footprintScale));
+        const bh = Math.max(6, Math.floor(cellH * footprintScale));
+        const baseHeightPx = Math.round(6 + (params.fdr - 0.1) * 6);
+        const jitter = Math.round((stableRandom(r*11,c*13)-0.5)*4);
+        const heightVal = Math.max(2, baseHeightPx + jitter);
+        const shade = Math.max(40, 220 - Math.min(180, heightVal*8));
+        const tintFactor = Math.min(0.5, mapRange(params.hi || 30, 30, 55, 0, 0.6));
+        const rcol = Math.round(shade * (1 - tintFactor) + hiRgb[0] * tintFactor);
+        const gcol = Math.round(shade * (1 - tintFactor) + hiRgb[1] * tintFactor);
+        const bcol = Math.round(shade * (1 - tintFactor) + hiRgb[2] * tintFactor);
+        const color = `rgb(${rcol},${gcol},${bcol})`;
+        const px = x + Math.floor((cellW - bw)/2);
+        const py = y + Math.floor((cellH - bh)/2);
+        mctx.fillStyle = 'rgba(0,0,0,0.08)'; mctx.fillRect(px + 3, py + 3, bw, bh);
+        mctx.fillStyle = color; mctx.fillRect(px, py, bw, bh);
+        mctx.fillStyle = 'rgba(255,255,255,0.06)'; mctx.fillRect(px, py, bw, Math.max(2, Math.floor(bh*0.15)));
+      }
+    }
+
+    // trees: uniformly distributed on empty plots; canopy larger as VDR increases
+    const canopyBase = Math.round(Math.min(cellW, cellH) * 0.10);
+    const canopyScale = mapRange(params.vdr, 0, 1, 1.0, 1.6);
+    const treeColorLow = [90,110,70], treeColorHigh = [32,140,50];
+    function treeColorByVdr(v){ return [ Math.round(treeColorLow[0] * (1-v) + treeColorHigh[0]*v ), Math.round(treeColorLow[1] * (1-v) + treeColorHigh[1]*v ), Math.round(treeColorLow[2] * (1-v) + treeColorHigh[2]*v ) ]; }
+    const tc = treeColorByVdr(params.vdr);
+    const treeThresh = mapRange(params.vdr, 0, 1, 0.02, 0.35);
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        if(roadRows.has(r) || roadCols.has(c)) continue;
+        if(occupancy[r][c]) continue;
+        const s = stableRandom(r*17+5, c*29+7);
+        if(s < treeThresh){
+          const x = offsetX + c * cellW;
+          const y = offsetY + r * cellH;
+          const cx = x + Math.floor(cellW*0.2 + stableRandom(r+10,c+20)*cellW*0.6);
+          const cy = y + Math.floor(cellH*0.2 + stableRandom(r+20,c+10)*cellH*0.6);
+          const tr = Math.max(5, Math.round(canopyBase * canopyScale + (stableRandom(r+3,c+4)-0.5)*2));
+          mctx.fillStyle = 'rgba(0,0,0,0.06)'; mctx.beginPath(); mctx.ellipse(cx+1, cy+1, tr*0.9, tr*0.5, 0, 0, 2*Math.PI); mctx.fill();
+          mctx.fillStyle = `rgb(${tc[0]},${tc[1]},${tc[2]})`; mctx.beginPath(); mctx.arc(cx, cy, tr, 0, Math.PI*2); mctx.fill();
+        }
+      }
+    }
+
+    // grid lines + border
+    mctx.strokeStyle = 'rgba(0,0,0,0.03)';
+    for(let r=0;r<=rows;r++){
+      const y = offsetY + r*cellH;
+      mctx.beginPath(); mctx.moveTo(offsetX, y); mctx.lineTo(offsetX + gridWidth, y); mctx.stroke();
+    }
+    for(let c=0;c<=cols;c++){
+      const x = offsetX + c*cellW;
+      mctx.beginPath(); mctx.moveTo(x, offsetY); mctx.lineTo(x, offsetY + gridHeight); mctx.stroke();
+    }
+    mctx.strokeStyle = 'rgba(0,0,0,0.06)'; mctx.strokeRect(0.5,0.5,w-1,h-1);
+  }
+
+  // helper: parse rgb(...) into array
+  function cssToRgbArray(css){
+    const m = css.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    if(!m) return [255,200,120];
+    return [Number(m[1]), Number(m[2]), Number(m[3])];
+  }
+
+  /* ---------- slider wiring ---------- */
+  const bsfRange = document.getElementById('right-bsf-range');
+  const isfRange = document.getElementById('right-isf-range');
+  const vdrRange = document.getElementById('right-vdr-range');
+  const fdrRange = document.getElementById('right-fdr-range');
+  const arRange  = document.getElementById('right-ar-range');
+
+  const bsfVal = document.getElementById('right-bsf-val');
+  const isfVal = document.getElementById('right-isf-val');
+  const vdrVal = document.getElementById('right-vdr-val');
+  const fdrVal = document.getElementById('right-fdr-val');
+  const arVal  = document.getElementById('right-ar-val');
+
+  function computeHI(params){
+    const intercept = 40.0299, coef_bsf = -5.9228, coef_isf = 8.7577, coef_vdr = -1.1275, coef_fdr = 0.5785, coef_ar = 0.3972;
+    return intercept + coef_bsf*params.bsf + coef_isf*params.isf + coef_vdr*params.vdr + coef_fdr*params.fdr + coef_ar*params.ar;
+  }
+
+  function updateMorphFromSliders(){
+    const params = {
+      bsf: parseFloat(bsfRange.value),
+      isf: parseFloat(isfRange.value),
+      vdr: parseFloat(vdrRange.value),
+      fdr: parseFloat(fdrRange.value),
+      ar: parseFloat(arRange.value)
+    };
+    params.hi = computeHI(params);
+    drawMorphology(params);
+    bsfVal.textContent = params.bsf.toFixed(2);
+    isfVal.textContent = params.isf.toFixed(2);
+    vdrVal.textContent = params.vdr.toFixed(2);
+    fdrVal.textContent = params.fdr.toFixed(2);
+    arVal.textContent  = params.ar.toFixed(2);
+    document.getElementById('right-result').innerText = `Predicted HI: ${params.hi.toFixed(2)}`;
+    // also update mortality chart's HI tint by updating left-side point label color via nothing needed here; left is independent
+  }
+
+  [bsfRange,isfRange,vdrRange,fdrRange,arRange].forEach(el=>{
+    el.addEventListener('input', ()=> updateMorphFromSliders());
+  });
+  document.getElementById('right-reset').addEventListener('click', ()=>{
+    bsfRange.value = 0.5; isfRange.value = 0.1; vdrRange.value = 0.3; fdrRange.value = 1.0; arRange.value = 1.0;
+    updateMorphFromSliders();
+  });
+  document.getElementById('exportMorph').addEventListener('click', ()=>{
+    const link = document.createElement('a'); link.download='morphology-preview.png'; link.href = morphCanvas.toDataURL('image/png'); link.click();
+  });
+
+  // initial draws
+  updateMorphFromSliders();
+
+  // touch support for dragging on small devices
+  chartCanvas.addEventListener('touchstart', (evt)=>{
+    if(!leftChart.data.datasets[1].data.length) return;
+    const touch = evt.touches[0];
+    const rect = chartCanvas.getBoundingClientRect();
+    const xPx = touch.clientX - rect.left;
+    const yPx = touch.clientY - rect.top;
+    const pt = leftChart.data.datasets[1].data[0];
+    const xPix = leftChart.scales.x.getPixelForValue(pt.x);
+    const yPix = leftChart.scales.y.getPixelForValue(pt.y);
+    const dx = xPx - xPix, dy = yPx - yPix;
+    if(Math.sqrt(dx*dx + dy*dy) < 18){
+      draggingPoint = true;
+      evt.preventDefault();
+    }
+  }, {passive:false});
+
+  window.addEventListener('touchmove', (evt)=>{
+    if(!draggingPoint) return;
+    const touch = evt.touches[0];
+    const rect = chartCanvas.getBoundingClientRect();
+    const clientX = touch.clientX;
+    const xPx = clientX - rect.left;
+    const xVal = leftChart.scales.x.getValueForPixel(xPx);
+    const model = document.getElementById('left-model').value;
+    const info = models[model];
+    let xv = xVal;
+    if(xv < info.range[0]) xv = info.range[0];
+    if(xv > info.range[1]) xv = info.range[1];
+    placePointAt(xv);
+    evt.preventDefault();
+  }, {passive:false});
+
+  window.addEventListener('touchend', ()=>{ draggingPoint = false; });
+
+  </script>
+</body>
+</html>
