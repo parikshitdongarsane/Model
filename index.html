@@ -3,178 +3,565 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Mortality & Morphology — interactive</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+<title>Mortality &amp; Morphology — Interactive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-  :root{--gap:14px;--pad:14px;--panel-bg:#fbfbfb;--border:#e6e6e6;--radius:10px;--font-sans:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
-  html,body{height:100%;margin:0;font-family:var(--font-sans);background:#fff;color:#111}
-  .wrap{max-width:1200px;margin:16px auto;padding:8px}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);height:86vh}
-  .col{display:grid;grid-template-rows: auto 1fr; gap:var(--gap)}
-  .panel{background:var(--panel-bg);border:1px solid var(--border);border-radius:var(--radius);padding:var(--pad);box-shadow:0 1px 0 rgba(0,0,0,0.03);display:flex;flex-direction:column}
-  .toolArea{min-height:50%; overflow:visible}
-  .mini{padding:8px 10px;border-radius:8px;border:1px solid var(--border)}
-  .row {display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  canvas {max-width:100%}
-  .unit {margin-left:6px;color:#333;font-weight:600}
-  label.inline {display:flex;align-items:center;gap:8px}
-  .sliderRow{display:flex;align-items:center;gap:12px;margin:6px 0}
-  .sliderRow input[type="range"]{flex:1}
-  .sliderValue{min-width:72px;text-align:right;font-weight:600}
-  #hiControls{max-width:520px}
-  .morphFrame{display:flex;gap:10px;align-items:flex-start}
-  .morphView{background:#ffffff;border:1px solid #e6e6e6;border-radius:8px;padding:8px;box-shadow:0 6px 20px rgba(16,24,40,0.04)}
-  .morphLegend{font-size:0.85rem;color:#333}
-  /* persistent label for chart point */
-  .pointLabel{
-    position: absolute;
-    pointer-events: none;
-    background: rgba(255,255,255,0.95);
-    border: 1px solid rgba(0,0,0,0.08);
-    padding:6px 8px;
-    border-radius:6px;
-    font-size:13px;
-    box-shadow: 0 6px 20px rgba(16,24,40,0.06);
-    transform: translate(-50%,-120%);
-    white-space:nowrap;
+  :root{
+    --bg:#f4f1ea;
+    --surface:#ffffff;
+    --ink:#1c1a17;
+    --ink-soft:#5a554c;
+    --line:#e2ddd2;
+    --line-strong:#cfc8b8;
+    --accent:#b5341d;       /* terracotta — heat */
+    --accent-deep:#7d2113;
+    --cool:#2f5d62;         /* deep teal — data */
+    --warn:#c8472a;
+    --radius:14px;
+    --shadow-sm:0 1px 2px rgba(28,26,23,.05);
+    --shadow-md:0 12px 32px -12px rgba(28,26,23,.18);
+    --font-display:"Fraunces",Georgia,serif;
+    --font-sans:"Public Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+    --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
   }
-  /* place container relative for absolute label */
-  .chartWrapper{ position: relative; }
-  @media (max-width:900px){ .grid{grid-template-columns:1fr; height:auto} .col{grid-template-rows: auto auto} }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{
+    font-family:var(--font-sans);
+    background:
+      radial-gradient(800px 400px at 88% -5%, rgba(181,52,29,.06), transparent 60%),
+      radial-gradient(700px 360px at 6% 102%, rgba(47,93,98,.07), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+  .wrap{max-width:1240px;margin:0 auto;padding:clamp(16px,3vw,36px)}
+
+  /* ---- header ---- */
+  header{margin-bottom:22px}
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--accent);margin:0 0 6px;
+  }
+  h1{
+    font-family:var(--font-display);
+    font-weight:600;font-size:clamp(1.7rem,3.4vw,2.6rem);
+    line-height:1.05;margin:0;letter-spacing:-.01em;
+  }
+  h1 em{font-style:italic;color:var(--accent)}
+  .lede{
+    margin:10px 0 0;max-width:62ch;color:var(--ink-soft);font-size:.96rem;
+  }
+  .source{
+    margin-top:10px;font-family:var(--font-mono);font-size:.74rem;
+    color:var(--ink-soft);
+  }
+
+  /* ---- grid ---- */
+  .grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:clamp(16px,2vw,24px);
+    align-items:start;
+  }
+  .panel{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-md);
+    overflow:hidden;
+  }
+  .panel-head{
+    display:flex;align-items:baseline;gap:10px;
+    padding:18px 20px 14px;
+    border-bottom:1px solid var(--line);
+  }
+  .panel-num{
+    font-family:var(--font-mono);font-size:.72rem;
+    color:#fff;background:var(--cool);
+    padding:3px 7px;border-radius:5px;letter-spacing:.04em;
+    flex-shrink:0;
+  }
+  .panel-num.warm{background:var(--accent)}
+  .panel-title{
+    font-family:var(--font-display);font-weight:600;font-size:1.18rem;
+    margin:0;letter-spacing:-.01em;
+  }
+  .panel-body{padding:18px 20px 20px}
+
+  /* ---- controls ---- */
+  .field-row{
+    display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;
+    margin-bottom:14px;
+  }
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{
+    font-family:var(--font-mono);font-size:.7rem;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);
+  }
+  .field-hint{
+    font-size:.72rem;color:var(--ink-soft);font-style:italic;
+    margin-top:1px;
+  }
+  select,input[type="number"]{
+    font-family:var(--font-sans);font-size:.92rem;
+    padding:9px 11px;border:1px solid var(--line-strong);
+    border-radius:9px;background:#fff;color:var(--ink);
+    transition:border-color .15s,box-shadow .15s;
+  }
+  select:focus,input[type="number"]:focus{
+    outline:none;border-color:var(--cool);
+    box-shadow:0 0 0 3px rgba(47,93,98,.14);
+  }
+  select{min-width:190px;cursor:pointer}
+  .input-unit{display:flex;align-items:stretch}
+  .input-unit input{
+    border-top-right-radius:0;border-bottom-right-radius:0;
+    width:118px;border-right:none;
+  }
+  .input-unit .unit{
+    display:flex;align-items:center;padding:0 11px;
+    background:#f7f5ef;border:1px solid var(--line-strong);
+    border-left:none;border-radius:0 9px 9px 0;
+    font-family:var(--font-mono);font-size:.82rem;color:var(--ink-soft);
+    min-width:38px;justify-content:center;
+  }
+  .btn{
+    font-family:var(--font-sans);font-weight:600;font-size:.88rem;
+    padding:9px 16px;border-radius:9px;cursor:pointer;
+    border:1px solid transparent;transition:transform .08s,filter .15s,background .15s;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{filter:brightness(1.07)}
+  .btn-ghost{background:#fff;border-color:var(--line-strong);color:var(--ink)}
+  .btn-ghost:hover{background:#f7f5ef}
+
+  /* ---- result readouts ---- */
+  .readout{
+    display:flex;align-items:baseline;gap:8px;
+    padding:12px 14px;border-radius:10px;
+    background:linear-gradient(180deg,#fbf3ef,#f7ece6);
+    border:1px solid #ecd9d0;margin:4px 0 16px;
+  }
+  .readout .lbl{
+    font-family:var(--font-mono);font-size:.72rem;letter-spacing:.07em;
+    text-transform:uppercase;color:var(--accent-deep);
+  }
+  .readout .val{
+    font-family:var(--font-display);font-weight:600;
+    font-size:1.5rem;color:var(--accent-deep);line-height:1;
+  }
+  .readout.cool{
+    background:linear-gradient(180deg,#eef4f3,#e6eeee);
+    border-color:#cfe0de;
+  }
+  .readout.cool .lbl{color:var(--cool)}
+  .readout.cool .val{color:var(--cool)}
+  .err{color:var(--warn);font-size:.84rem;margin:-8px 0 12px;min-height:1em}
+
+  /* ---- chart ---- */
+  .chart-card{
+    background:#fff;border:1px solid var(--line);
+    border-radius:10px;padding:10px 8px 4px;margin-bottom:14px;
+  }
+  .chartWrapper{position:relative}
+  #leftChart{height:300px}
+  .pointLabel{
+    position:absolute;pointer-events:none;
+    background:rgba(255,255,255,.97);
+    border:1px solid var(--line-strong);
+    padding:7px 10px;border-radius:8px;
+    font-size:.8rem;color:var(--ink);
+    box-shadow:var(--shadow-md);
+    transform:translate(-50%,-130%);
+    white-space:nowrap;z-index:5;
+    transition:opacity .12s;
+  }
+  .pointLabel strong{color:var(--accent-deep)}
+  .hint{
+    font-size:.82rem;color:var(--ink-soft);line-height:1.5;
+  }
+  .hint .kbd{
+    font-family:var(--font-mono);font-size:.75rem;
+    background:#f1eee6;border:1px solid var(--line-strong);
+    border-radius:4px;padding:1px 5px;
+  }
+
+  /* ---- equation ---- */
+  .equation{
+    margin-top:14px;padding:13px 15px;
+    background:#1c1a17;border-radius:10px;
+  }
+  .equation h4{
+    margin:0 0 7px;font-family:var(--font-mono);
+    font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;
+    color:#9c968a;
+  }
+  .equation p{
+    margin:0;font-family:var(--font-mono);font-size:.9rem;
+    color:#f4f1ea;word-break:break-word;
+  }
+  .equation sup{font-size:.7em}
+
+  /* ---- morphology ---- */
+  .morphFrame{display:flex;gap:16px;flex-wrap:wrap}
+  .morphView{
+    background:#fff;border:1px solid var(--line);
+    border-radius:10px;padding:8px;flex:1 1 320px;min-width:0;
+  }
+  #morphCanvas{width:100%;height:auto;display:block;border-radius:6px}
+  .morphLegend{
+    flex:1 1 150px;font-size:.84rem;color:var(--ink-soft);
+  }
+  .morphLegend h4{
+    margin:0 0 8px;font-family:var(--font-mono);
+    font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .swatch{
+    display:inline-block;width:12px;height:12px;border-radius:3px;
+    margin-right:7px;vertical-align:-1px;border:1px solid rgba(0,0,0,.12);
+  }
+  .legend-item{margin:6px 0}
+  .gradient-bar{
+    height:10px;border-radius:5px;margin:8px 0 4px;
+    background:linear-gradient(90deg,rgb(255,243,128),rgb(255,167,79),rgb(255,80,80));
+    border:1px solid rgba(0,0,0,.1);
+  }
+  .gradient-labels{
+    display:flex;justify-content:space-between;
+    font-family:var(--font-mono);font-size:.66rem;color:var(--ink-soft);
+  }
+
+  /* ---- sliders ---- */
+  .sliders{margin-top:18px}
+  .sliderRow{
+    display:grid;grid-template-columns:96px 1fr 58px;
+    align-items:center;gap:14px;margin:11px 0;
+  }
+  .sliderRow label{
+    font-family:var(--font-mono);font-size:.78rem;
+    color:var(--ink);font-weight:500;
+  }
+  .sliderRow .sub{
+    display:block;font-size:.62rem;color:var(--ink-soft);
+    letter-spacing:.04em;
+  }
+  .sliderValue{
+    font-family:var(--font-mono);font-size:.84rem;font-weight:500;
+    text-align:right;color:var(--cool);
+  }
+  input[type="range"]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:5px;border-radius:3px;
+    background:linear-gradient(90deg,var(--cool) 0%,var(--cool) var(--fill,50%),var(--line-strong) var(--fill,50%));
+    cursor:pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:17px;height:17px;border-radius:50%;
+    background:#fff;border:2px solid var(--cool);
+    box-shadow:var(--shadow-sm);transition:transform .1s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+  input[type="range"]::-moz-range-thumb{
+    width:17px;height:17px;border-radius:50%;
+    background:#fff;border:2px solid var(--cool);
+  }
+  input[type="range"]:focus{outline:none}
+  input[type="range"]:focus::-webkit-slider-thumb{
+    box-shadow:0 0 0 4px rgba(47,93,98,.16);
+  }
+
+  /* ---- footnote panels ---- */
+  .note{
+    background:#faf8f3;border:1px solid var(--line);
+    border-radius:10px;padding:13px 15px;margin-top:14px;
+  }
+  .note h4{
+    margin:0 0 5px;font-family:var(--font-mono);
+    font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .note p{margin:0;font-size:.85rem;color:var(--ink-soft);line-height:1.55}
+
+  footer{
+    margin-top:26px;padding-top:16px;border-top:1px solid var(--line);
+    font-family:var(--font-mono);font-size:.72rem;color:var(--ink-soft);
+  }
+
+  /* ---- disclaimer ---- */
+  .disclaimer{
+    margin-top:24px;padding:16px 20px;
+    background:#faf8f3;
+    border:1px solid var(--line);
+    border-left:3px solid var(--accent);
+    border-radius:10px;
+  }
+  .disclaimer h4{
+    margin:0 0 8px;font-family:var(--font-mono);
+    font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--accent-deep);
+  }
+  .disclaimer p{
+    margin:0;font-size:.84rem;line-height:1.65;color:var(--ink-soft);
+    text-align:justify;
+  }
+  .disclaimer strong{color:var(--ink)}
+
+  /* ---- citation cards ---- */
+  .citations{
+    display:grid;grid-template-columns:1fr 1fr;gap:14px;
+    margin-top:18px;
+  }
+  .cite-card{
+    display:block;text-decoration:none;color:inherit;
+    background:var(--surface);border:1px solid var(--line);
+    border-left:3px solid var(--cool);
+    border-radius:10px;padding:13px 15px;
+    box-shadow:var(--shadow-sm);
+    transition:transform .12s,box-shadow .15s,border-color .15s;
+  }
+  .cite-card.warm{border-left-color:var(--accent)}
+  .cite-card:hover{
+    transform:translateY(-2px);
+    box-shadow:var(--shadow-md);
+  }
+  .cite-card:hover .cite-link{color:var(--accent)}
+  .cite-tag{
+    font-family:var(--font-mono);font-size:.64rem;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--cool);
+    margin:0 0 6px;
+  }
+  .cite-card.warm .cite-tag{color:var(--accent)}
+  .cite-title{
+    font-family:var(--font-display);font-weight:600;font-size:.98rem;
+    line-height:1.25;margin:0 0 6px;color:var(--ink);
+  }
+  .cite-meta{
+    margin:0;font-size:.78rem;color:var(--ink-soft);line-height:1.45;
+  }
+  .cite-link{
+    display:inline-block;margin-top:7px;
+    font-family:var(--font-mono);font-size:.72rem;
+    color:var(--cool);transition:color .15s;
+  }
+  .cite-link::after{content:" \2197"}
+
+  @media (max-width:880px){
+    .grid{grid-template-columns:1fr}
+    .citations{grid-template-columns:1fr}
+    .input-unit input{width:100%}
+    .field.grow{flex:1 1 100%}
+  }
 </style>
 </head>
 <body>
   <div class="wrap">
-    <h2 style="margin:6px 0 12px;font-weight:600">Mortality & Morphology — interactive</h2>
+    <header>
+      <p class="eyebrow">Research Tool · Nagpur Heat Studies</p>
+      <h1>Mortality &amp; <em>Morphology</em></h1>
+      <p class="lede">
+        Two separate models from field research in Nagpur, India, presented
+        side by side: one relating heat-stress indices to all-cause mortality,
+        and an independent one relating urban form to the heat index. The two
+        are not coupled — each is explored on its own.
+      </p>
+
+      <div class="citations">
+        <a class="cite-card warm" href="https://doi.org/10.1016/j.scs.2023.105099" target="_blank" rel="noopener">
+          <p class="cite-tag">Panel 01 · Mortality</p>
+          <p class="cite-title">Numerical analysis of extreme heat in Nagpur city using heat stress indices, all-cause mortality and local climate zone classification</p>
+          <p class="cite-meta">
+            Kotharkar R., Dongarsane P., Ghosh A., Kotharkar V.<br>
+            <em>Sustainable Cities and Society</em> 101 (2024) 105099
+          </p>
+          <span class="cite-link">doi.org/10.1016/j.scs.2023.105099</span>
+        </a>
+        <a class="cite-card" href="https://doi.org/10.1016/j.buildenv.2023.110044" target="_blank" rel="noopener">
+          <p class="cite-tag">Panel 02 · Morphology</p>
+          <p class="cite-title">Determining influence of urban morphology on air temperature and heat index with hourly emphasis</p>
+          <p class="cite-meta">
+            Kotharkar R., Dongarsane P., Keskar R.<br>
+            <em>Building and Environment</em> 233 (2023) 110044
+          </p>
+          <span class="cite-link">doi.org/10.1016/j.buildenv.2023.110044</span>
+        </a>
+      </div>
+    </header>
 
     <div class="grid">
-      <!-- LEFT: Mortality -->
-      <div class="col">
-        <div class="panel toolArea">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <strong>Mortality Calculator (Nagpur)</strong>
-          </div>
+      <!-- ============ LEFT: MORTALITY ============ -->
+      <section class="panel">
+        <div class="panel-head">
+          <span class="panel-num warm">01</span>
+          <h2 class="panel-title">Mortality Calculator</h2>
+        </div>
+        <div class="panel-body">
 
-          <div style="margin-top:12px;display:flex;flex-direction:column;gap:12px">
-            <div class="row">
-              <label for="left-model"><strong>Model</strong></label>
-              <select id="left-model" class="mini">
+          <div class="field-row">
+            <div class="field">
+              <label for="left-model">Heat-stress model</label>
+              <select id="left-model">
                 <option value="Maximum Temperature">Maximum Temperature</option>
                 <option value="Humidex">Humidex</option>
                 <option value="RSI">RSI</option>
               </select>
-
-              <label for="left-inputValue" style="margin-left:8px;"><strong>Input</strong></label>
-              <input type="number" id="left-inputValue" class="mini" step="0.01" style="width:120px" placeholder="enter value">
-              <span id="left-unit" class="unit">°C</span>
-
-              <button type="button" id="left-calculateButton" class="mini" style="background:#007bff;color:#fff;border:none;">Calculate</button>
-              <button id="left-updateChart" class="mini">Update graph</button>
+              <span class="field-hint">Click to select the index and model.</span>
             </div>
-
-            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
-              <p id="left-mortalityResult" style="margin:0;font-weight:600;color:#007bff">Probable deaths: —</p>
-              <p id="left-error" style="margin:0;color:#d00"></p>
-            </div>
-
-            <div style="background:#fff;padding:8px;border-radius:8px;border:1px solid var(--border)">
-              <div class="chartWrapper">
-                <canvas id="leftChart" aria-label="Mortality model predictions chart" style="height:320px"></canvas>
-                <!-- persistent label (always visible) -->
-                <div id="pointLabel" class="pointLabel" style="display:none">X: —<br>Probable deaths: —</div>
+            <div class="field">
+              <label for="left-inputValue">Input value</label>
+              <div class="input-unit">
+                <input type="number" id="left-inputValue" step="0.01" placeholder="value">
+                <span id="left-unit" class="unit">°C</span>
               </div>
             </div>
-
-            <div id="left-equationContainer">
-              <h4 style="margin:6px 0 6px">Model Equation</h4>
-              <p id="left-equation" style="margin:0">Please select a model to see its equation.</p>
+            <div class="field">
+              <label>&nbsp;</label>
+              <button type="button" id="left-calculateButton" class="btn btn-primary">Calculate</button>
+            </div>
+            <div class="field">
+              <label>&nbsp;</label>
+              <button type="button" id="left-updateChart" class="btn btn-ghost">Reset curve</button>
             </div>
           </div>
-        </div>
 
-        <div class="panel desc" style="min-height:80px">
-          <strong>Description</strong>
-          <div style="margin-top:10px;color:#444;line-height:1.4;">
-            Drag the red marker on the curve or enter a value. The label beside the marker always shows the input (with unit) and probable deaths.
+          <div class="readout" id="left-readout">
+            <span class="lbl">Probable mortalities</span>
+            <span class="val" id="left-mortalityResult">—</span>
           </div>
-        </div>
-      </div>
+          <p class="err" id="left-error"></p>
 
-      <!-- RIGHT: Morphology -->
-      <div class="col">
-        <div class="panel toolArea">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <strong>Morphology Preview & HI Prediction</strong>
-          </div>
-
-          <div style="margin-top:12px;display:flex;gap:12px;flex-direction:column">
-            <div class="morphFrame">
-              <div class="morphView">
-                <canvas id="morphCanvas" width="520" height="360"></canvas>
-              </div>
-              <div class="morphLegend">
-                <div><strong>Legend</strong></div>
-                <div style="margin-top:8px">■ buildings (shade = height)</div>
-                <div>● trees (green)</div>
-                <div style="margin-top:12px"><button id="exportMorph" class="mini">Export PNG</button></div>
-                <div style="margin-top:12px;font-size:0.9rem;color:#666">
-                  HI color mapping: plots/buildings change from yellow → orange → red as HI increases.
-                </div>
-              </div>
+          <div class="chart-card">
+            <div class="chartWrapper">
+              <canvas id="leftChart" aria-label="Mortality model prediction curve"></canvas>
+              <div id="pointLabel" class="pointLabel" style="display:none"></div>
             </div>
+          </div>
 
-            <!-- sliders -->
-            <div id="hiControls" style="margin-top:6px">
-              <div class="sliderRow">
-                <label class="inline" for="right-bsf-range">BSF</label>
-                <input type="range" id="right-bsf-range" min="0.05" max="0.95" step="0.01" value="0.50">
-                <div class="sliderValue"><span id="right-bsf-val">0.50</span></div>
-              </div>
+          <p class="hint">
+            Drag the <strong style="color:var(--accent)">red marker</strong>
+            along the curve, or type a value and press
+            <span class="kbd">Calculate</span>. The label tracks the input
+            and the predicted mortalities.
+          </p>
 
-              <div class="sliderRow">
-                <label class="inline" for="right-isf-range">ISF</label>
-                <input type="range" id="right-isf-range" min="0" max="1" step="0.01" value="0.10">
-                <div class="sliderValue"><span id="right-isf-val">0.10</span></div>
-              </div>
-
-              <div class="sliderRow">
-                <label class="inline" for="right-vdr-range">VDR</label>
-                <input type="range" id="right-vdr-range" min="0" max="1" step="0.01" value="0.30">
-                <div class="sliderValue"><span id="right-vdr-val">0.30</span></div>
-              </div>
-
-              <div class="sliderRow">
-                <label class="inline" for="right-fdr-range">FDR (height)</label>
-                <input type="range" id="right-fdr-range" min="0.1" max="3.0" step="0.1" value="1.0">
-                <div class="sliderValue"><span id="right-fdr-val">1.00</span></div>
-              </div>
-
-              <div class="sliderRow">
-                <label class="inline" for="right-ar-range">AR (road width)</label>
-                <input type="range" id="right-ar-range" min="0.5" max="2.5" step="0.05" value="1.0">
-                <div class="sliderValue"><span id="right-ar-val">1.00</span></div>
-              </div>
-
-              <div style="margin-top:10px;display:flex;gap:10px;align-items:center">
-                <button type="button" id="right-reset" class="mini">Reset sliders</button>
-              </div>
-            </div>
-
-            <p id="right-result" style="margin-top:6px;font-weight:600;color:#007bff">Predicted HI: —</p>
+          <div class="equation">
+            <h4>Polynomial model — degree 3</h4>
+            <p id="left-equation">Select a model to see its equation.</p>
           </div>
         </div>
+      </section>
 
-        <div class="panel desc" style="min-height:40px">
-          <strong>Notes</strong>
-          <div style="margin-top:8px;color:#444;line-height:1.4;">Background white; roads grey. Plots/buildings color by HI (yellow→orange→red). BSF only affects building density.</div>
+      <!-- ============ RIGHT: MORPHOLOGY ============ -->
+      <section class="panel">
+        <div class="panel-head">
+          <span class="panel-num">02</span>
+          <h2 class="panel-title">Morphology &amp; HI Prediction</h2>
         </div>
-      </div>
+        <div class="panel-body">
+
+          <div class="morphFrame">
+            <div class="morphView">
+              <canvas id="morphCanvas" width="520" height="360"></canvas>
+            </div>
+            <div class="morphLegend">
+              <h4>Legend</h4>
+              <div class="legend-item">
+                <span class="swatch" style="background:#9a9a9a"></span>buildings — shade by height
+              </div>
+              <div class="legend-item">
+                <span class="swatch" style="background:#28b432"></span>trees — canopy by VDR
+              </div>
+              <div class="legend-item">
+                <span class="swatch" style="background:#d9d9d9"></span>roads
+              </div>
+              <h4 style="margin-top:14px">Heat Index tint</h4>
+              <div class="gradient-bar"></div>
+              <div class="gradient-labels"><span>30 °C</span><span>55 °C</span></div>
+              <button type="button" id="exportMorph" class="btn btn-ghost" style="margin-top:14px;width:100%">Export PNG</button>
+            </div>
+          </div>
+
+          <div class="readout cool" id="right-readout">
+            <span class="lbl">Predicted Heat Index</span>
+            <span class="val" id="right-result">—</span>
+          </div>
+
+          <div class="sliders" id="hiControls">
+            <div class="sliderRow">
+              <label>BSF<span class="sub">building surface</span></label>
+              <input type="range" id="right-bsf-range" min="0.05" max="0.95" step="0.01" value="0.50">
+              <span class="sliderValue" id="right-bsf-val">0.50</span>
+            </div>
+            <div class="sliderRow">
+              <label>ISF<span class="sub">impervious surface</span></label>
+              <input type="range" id="right-isf-range" min="0" max="1" step="0.01" value="0.10">
+              <span class="sliderValue" id="right-isf-val">0.10</span>
+            </div>
+            <div class="sliderRow">
+              <label>VDR<span class="sub">vegetation density</span></label>
+              <input type="range" id="right-vdr-range" min="0" max="1" step="0.01" value="0.30">
+              <span class="sliderValue" id="right-vdr-val">0.30</span>
+            </div>
+            <div class="sliderRow">
+              <label>FDR<span class="sub">fabric density</span></label>
+              <input type="range" id="right-fdr-range" min="0.1" max="3.0" step="0.1" value="1.0">
+              <span class="sliderValue" id="right-fdr-val">1.00</span>
+            </div>
+            <div class="sliderRow">
+              <label>AR<span class="sub">aspect ratio</span></label>
+              <input type="range" id="right-ar-range" min="0.5" max="2.5" step="0.05" value="1.0">
+              <span class="sliderValue" id="right-ar-val">1.00</span>
+            </div>
+            <div style="margin-top:14px">
+              <button type="button" id="right-reset" class="btn btn-ghost">Reset sliders</button>
+            </div>
+          </div>
+
+          <div class="note">
+            <h4>Notes</h4>
+            <p>
+              Background is white, roads grey. Plots and buildings shift
+              yellow → orange → red as the predicted HI rises. BSF controls
+              building density only.
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
+
+    <section class="disclaimer">
+      <h4>Scope, Assumptions &amp; Limitations</h4>
+      <p>
+        This interactive tool is derived entirely from the two peer-reviewed
+        publications cited above and reproduces their statistical models for
+        illustrative purposes only. All predictions are subject to the
+        assumptions, methodological constraints, and limitations stated in the
+        respective source articles — including, but not limited to, the use of
+        binned regression, all-cause (rather than cause-specific) mortality
+        data, the exclusion of solar radiation and wind speed from the
+        heat-stress indices, and the omission of individual-level demographic
+        and socio-economic factors. The regression relationships are
+        empirically valid only for the city of <strong>Nagpur, Maharashtra,
+        India</strong>, and only for <strong>summertime</strong> conditions
+        over the periods analysed in the original studies. Outputs should not
+        be extrapolated to other locations, seasons, or populations, and do
+        not constitute predictive, clinical, or policy guidance.
+      </p>
+    </section>
+
+    <footer>
+      Interactive visualisation of published regression models — Nagpur, India.
+    </footer>
   </div>
 
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
   <script>
   /********************* Mortality calculator (left) *********************/
   const models = {
@@ -191,72 +578,126 @@
     type: 'line',
     data: {
       datasets: [
-        { label:'Model curve', data:[], tension:0.25, fill:false, pointRadius:0, borderWidth:2, parsing:false, borderColor:'#0b61d9' },
-        { label:'Input point', data:[], type:'scatter', pointRadius:7, showLine:false, backgroundColor:'#d9534f', parsing:false }
+        { label:'Model curve', data:[], tension:0.25, fill:false, pointRadius:0, borderWidth:2.5, parsing:false, borderColor:'#2f5d62' },
+        { label:'Input point', data:[], type:'scatter', pointRadius:7, pointHoverRadius:8, showLine:false, backgroundColor:'#b5341d', borderColor:'#fff', borderWidth:2, parsing:false }
       ]
     },
     options: {
       responsive:true, maintainAspectRatio:false,
+      animation:false,
+      layout:{ padding:{ top:8, right:8 } },
       scales:{
-        x:{ type:'linear', title:{display:true,text:'Input value'} },
-        y:{ title:{display:true,text:'Predicted deaths'} }
+        x:{ type:'linear', title:{display:true,text:'Input value',font:{family:'IBM Plex Mono',size:11}}, grid:{color:'#eee9de'}, ticks:{font:{family:'IBM Plex Mono',size:10},color:'#5a554c'} },
+        y:{ title:{display:true,text:'Predicted mortalities',font:{family:'IBM Plex Mono',size:11}}, grid:{color:'#eee9de'}, ticks:{font:{family:'IBM Plex Mono',size:10},color:'#5a554c'} }
       },
-      plugins:{ legend:{display:true,position:'top'}, tooltip:{ enabled:false } },
+      plugins:{
+        legend:{display:true,position:'top',labels:{font:{family:'Public Sans',size:11},boxWidth:14,boxHeight:8,usePointStyle:true}},
+        tooltip:{ enabled:false }
+      },
       elements: { point: { hitRadius: 12 } }
     }
   });
 
-  // format equation as mathy HTML
   function formatEquation(coeffs){
     function absFmt(n){ const v=Math.abs(n); const s = v>=1? v.toFixed(2): v.toFixed(4); return s.replace(/\.?0+$/,''); }
-    const c0 = coeffs[0];
     let html = 'y = ';
-    const c0Abs = absFmt(c0);
-    html += (c0 < 0 ? ('-' + c0Abs) : c0Abs);
+    html += (coeffs[0] < 0 ? ('\u2212' + absFmt(coeffs[0])) : absFmt(coeffs[0]));
     for(let i=1;i<coeffs.length;i++){
       const c = coeffs[i];
       if(Math.abs(c) < 1e-8) continue;
-      const sign = c>=0 ? ' + ' : ' - ';
-      const coefAbs = absFmt(c);
-      const coefDisplay = (Math.abs(c)===1 && i>0) ? '' : coefAbs;
+      const sign = c>=0 ? ' + ' : ' \u2212 ';
+      const coefDisplay = (Math.abs(c)===1 && i>0) ? '' : absFmt(c);
       const expo = i===1 ? 'x' : ('x<sup>' + i + '</sup>');
-      html += sign + coefDisplay + '·' + expo;
+      html += sign + coefDisplay + '\u00b7' + expo;
     }
     return html;
   }
 
-  // persistent point label element
   const pointLabel = document.getElementById('pointLabel');
-
-  // state for dragging
   let draggingPoint = false;
+  let justDragged = false;
 
-  // Utility: convert canvas pixel to chart value
+  // shift a readout box along the heat-index palette (yellow -> orange -> dark
+  // orange/red) as its value rises, matching the morphology HI tint scheme
+  function tintReadout(el, t){
+    t = Math.min(1, Math.max(0, t));
+    // HI palette anchors: yellow, orange, deep red
+    const yellow = [255,243,128];
+    const orange = [255,167,79];
+    const red    = [201,71,42];
+    let fill;
+    if(t <= 0.5){
+      const k = t / 0.5;
+      fill = [
+        Math.round(yellow[0]+(orange[0]-yellow[0])*k),
+        Math.round(yellow[1]+(orange[1]-yellow[1])*k),
+        Math.round(yellow[2]+(orange[2]-yellow[2])*k)
+      ];
+    } else {
+      const k = (t-0.5) / 0.5;
+      fill = [
+        Math.round(orange[0]+(red[0]-orange[0])*k),
+        Math.round(orange[1]+(red[1]-orange[1])*k),
+        Math.round(orange[2]+(red[2]-orange[2])*k)
+      ];
+    }
+    // soft wash background: a pale version of the fill on top, fuller below
+    const pale = [
+      Math.round(fill[0]+(255-fill[0])*0.55),
+      Math.round(fill[1]+(255-fill[1])*0.55),
+      Math.round(fill[2]+(255-fill[2])*0.55)
+    ];
+    const mid = [
+      Math.round(fill[0]+(255-fill[0])*0.18),
+      Math.round(fill[1]+(255-fill[1])*0.18),
+      Math.round(fill[2]+(255-fill[2])*0.18)
+    ];
+    el.style.background = 'linear-gradient(180deg,rgb('+pale.join(',')+'),rgb('+mid.join(',')+'))';
+    el.style.borderColor = 'rgb('+fill.join(',')+')';
+    // text: deep, readable ink that darkens with t
+    const ink = [
+      Math.round(120 + (110-120)*t),
+      Math.round(70  + (33 -70 )*t),
+      Math.round(20  + (19 -20 )*t)
+    ];
+    const inkCss = 'rgb('+ink.join(',')+')';
+    el.querySelector('.val').style.color = inkCss;
+    el.querySelector('.lbl').style.color = inkCss;
+  }
+
   function pixelToValue(evt){
     const rect = chartCanvas.getBoundingClientRect();
     const xPx = evt.clientX - rect.left;
     const yPx = evt.clientY - rect.top;
-    const xScale = leftChart.scales.x;
-    const yScale = leftChart.scales.y;
-    const xVal = xScale.getValueForPixel(xPx);
-    const yVal = yScale.getValueForPixel(yPx);
-    return { xPx, yPx, xVal, yVal };
+    return {
+      xPx, yPx,
+      xVal: leftChart.scales.x.getValueForPixel(xPx),
+      yVal: leftChart.scales.y.getValueForPixel(yPx)
+    };
   }
 
-  // Utility: position label next to point (absolute)
+  // BUG FIX: clamp label inside the chart wrapper, and drop the redundant
+  // wrapperRect.left + xPx - wrapperRect.left math (which just equalled xPx).
   function positionLabelAtPoint(xPx, yPx, textHtml){
-    const wrapper = chartCanvas.parentElement; // chartWrapper
-    const wrapperRect = wrapper.getBoundingClientRect();
-    pointLabel.style.left = (wrapperRect.left + xPx - wrapperRect.left) + 'px';
-    pointLabel.style.top = (wrapperRect.top + yPx - wrapperRect.top) + 'px';
     pointLabel.innerHTML = textHtml;
     pointLabel.style.display = 'block';
+    const wrapper = chartCanvas.parentElement;
+    const wrapW = wrapper.clientWidth;
+    const labelW = pointLabel.offsetWidth;
+    const half = labelW / 2;
+    // keep the label fully within the chart wrapper horizontally
+    const clampedX = Math.min(Math.max(xPx, half + 4), wrapW - half - 4);
+    // if the point is near the top, flip the label below the marker
+    const flip = yPx < pointLabel.offsetHeight + 14;
+    pointLabel.style.left = clampedX + 'px';
+    pointLabel.style.top = yPx + 'px';
+    pointLabel.style.transform = flip
+      ? 'translate(-50%, 30%)'
+      : 'translate(-50%, -130%)';
   }
 
-  // Update chart curve and clear point
   function leftUpdateChart(){
-    const select = document.getElementById('left-model');
-    const modelKey = select.value || "Maximum Temperature";
+    const modelKey = document.getElementById('left-model').value || "Maximum Temperature";
     const info = models[modelKey];
     const [minX,maxX] = info.range;
     const n = 300;
@@ -266,371 +707,346 @@
       pts[i] = { x: Number(x.toFixed(4)), y: Number(evalPoly(info.coeffs,x).toFixed(6)) };
     }
     leftChart.data.datasets[0].data = pts;
-    leftChart.data.datasets[1].data = [];
     leftChart.options.scales.x.title.text = info.unit ? (info.xlabel + ' (' + info.unit + ')') : info.xlabel;
     leftChart.update();
     document.getElementById('left-equation').innerHTML = formatEquation(info.coeffs);
-    document.getElementById('left-unit').textContent = info.unit || '';
-    // hide label until a point is added
-    pointLabel.style.display = 'none';
+    document.getElementById('left-unit').textContent = info.unit || '—';
+    // re-place the existing point so the label stays correct after rescale
+    const pt = leftChart.data.datasets[1].data[0];
+    if(pt) placePointAt(pt.x);
   }
 
-  // place point exactly on curve and update UI
   function placePointAt(x){
-    const model = document.getElementById('left-model').value;
-    const info = models[model];
-    // clamp x into model's valid range for smoother UX
-    const minX = info.range[0], maxX = info.range[1];
-    if(x < minX) x = minX;
-    if(x > maxX) x = maxX;
+    const info = models[document.getElementById('left-model').value];
+    x = Math.min(Math.max(x, info.range[0]), info.range[1]);
     const exactY = evalPoly(info.coeffs, x);
-    // update scatter dataset
     leftChart.data.datasets[1].data = [{ x: Number(x.toFixed(6)), y: Number(exactY) }];
     leftChart.update();
-    // set input and result label
     document.getElementById('left-inputValue').value = Number(x.toFixed(2));
-    document.getElementById('left-mortalityResult').innerText = `Probable deaths: ${Math.round(exactY)}`;
-    // position persistent label near the point
-    // need to compute pixel position for value x,y
-    const xScale = leftChart.scales.x, yScale = leftChart.scales.y;
-    const xPx = xScale.getPixelForValue(x);
-    const yPx = yScale.getPixelForValue(exactY);
-    const unit = info.unit ? ` (${info.unit})` : '';
-    const labelHtml = `<strong>${info.xlabel}${unit}:</strong> ${Number(x.toFixed(2))} &nbsp; <strong>Probable deaths:</strong> ${Math.round(exactY)}`;
-    positionLabelAtPoint(xPx, yPx, labelHtml);
+    document.getElementById('left-mortalityResult').textContent = Math.round(exactY);
+    document.getElementById('left-error').textContent = '';
+    // tint the deaths readout: pale at the model's lowest predicted deaths,
+    // deep red at its highest (monotonic increasing curve over the range)
+    const yLo = evalPoly(info.coeffs, info.range[0]);
+    const yHi = evalPoly(info.coeffs, info.range[1]);
+    tintReadout(document.getElementById('left-readout'), (exactY - yLo) / (yHi - yLo));
+    const xPx = leftChart.scales.x.getPixelForValue(x);
+    const yPx = leftChart.scales.y.getPixelForValue(exactY);
+    const unit = info.unit ? ' (' + info.unit + ')' : '';
+    positionLabelAtPoint(xPx, yPx,
+      '<strong>' + info.xlabel + unit + ':</strong> ' + Number(x.toFixed(2)) +
+      ' &nbsp;·&nbsp; <strong>Mortalities:</strong> ' + Math.round(exactY));
   }
 
-  // handlers: input value changed manually
   document.getElementById('left-calculateButton').addEventListener('click', ()=>{
-    const model = document.getElementById('left-model').value;
-    const inputValue = parseFloat(document.getElementById('left-inputValue').value);
-    if(!model || isNaN(inputValue)) return;
-    placePointAt(inputValue);
+    const info = models[document.getElementById('left-model').value];
+    const raw = document.getElementById('left-inputValue').value;
+    const v = parseFloat(raw);
+    const errEl = document.getElementById('left-error');
+    if(raw === '' || isNaN(v)){
+      errEl.textContent = 'Please enter a numeric value.';
+      return;
+    }
+    if(v < info.range[0] || v > info.range[1]){
+      errEl.textContent = 'Value clamped to model range ' + info.range[0] + '–' + info.range[1] + '.';
+    } else {
+      errEl.textContent = '';
+    }
+    placePointAt(v);
   });
 
-  document.getElementById('left-updateChart').addEventListener('click', leftUpdateChart);
+  document.getElementById('left-updateChart').addEventListener('click', ()=>{
+    const info = models[document.getElementById('left-model').value];
+    leftUpdateChart();
+    placePointAt((info.range[0] + info.range[1]) / 2);
+  });
 
-  // initialize chart with default model
-  leftUpdateChart();
+  document.getElementById('left-model').addEventListener('change', ()=>{
+    const info = models[document.getElementById('left-model').value];
+    leftChart.data.datasets[1].data = [];
+    leftUpdateChart();
+    placePointAt((info.range[0] + info.range[1]) / 2);
+  });
 
-  // Mouse interactions for dragging the point
-  chartCanvas.addEventListener('mousedown', (evt)=>{
-    // if there is no point yet, do nothing
-    if(!leftChart.data.datasets[1].data.length) return;
-    const pos = pixelToValue(evt);
-    // determine distance in pixels between click and point
+  // ---- dragging the marker ----
+  function hitTestPoint(xPx, yPx, tol){
     const pt = leftChart.data.datasets[1].data[0];
-    const xPix = leftChart.scales.x.getPixelForValue(pt.x);
-    const yPix = leftChart.scales.y.getPixelForValue(pt.y);
-    const dx = pos.xPx - xPix;
-    const dy = pos.yPx - yPix;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    // allow start drag only if within 14 px
-    if(dist < 14){
+    if(!pt) return false;
+    const dx = xPx - leftChart.scales.x.getPixelForValue(pt.x);
+    const dy = yPx - leftChart.scales.y.getPixelForValue(pt.y);
+    return Math.sqrt(dx*dx + dy*dy) < tol;
+  }
+
+  chartCanvas.addEventListener('mousedown', (evt)=>{
+    const pos = pixelToValue(evt);
+    if(hitTestPoint(pos.xPx, pos.yPx, 16)){
       draggingPoint = true;
+      chartCanvas.style.cursor = 'grabbing';
       evt.preventDefault();
     }
   });
-
+  // click anywhere on the plot snaps the marker to that x-value on the curve
+  chartCanvas.addEventListener('click', (evt)=>{
+    if(justDragged){ justDragged = false; return; }
+    placePointAt(pixelToValue(evt).xVal);
+  });
+  chartCanvas.addEventListener('mousemove', (evt)=>{
+    if(draggingPoint) return;
+    const pos = pixelToValue(evt);
+    chartCanvas.style.cursor = hitTestPoint(pos.xPx, pos.yPx, 16) ? 'grab' : 'crosshair';
+  });
   window.addEventListener('mousemove', (evt)=>{
     if(!draggingPoint) return;
-    const pos = pixelToValue(evt);
-    // move only along x domain (find y via polynomial)
-    const model = document.getElementById('left-model').value;
-    const info = models[model];
-    let xVal = pos.xVal;
-    // clamp to model domain
-    if(xVal < info.range[0]) xVal = info.range[0];
-    if(xVal > info.range[1]) xVal = info.range[1];
-    placePointAt(xVal);
+    placePointAt(pixelToValue(evt).xVal);
+  });
+  window.addEventListener('mouseup', ()=>{
+    if(draggingPoint){ draggingPoint = false; justDragged = true; chartCanvas.style.cursor = 'crosshair'; }
   });
 
-  window.addEventListener('mouseup', (evt)=>{
-    if(draggingPoint){
-      draggingPoint = false;
+  // touch
+  chartCanvas.addEventListener('touchstart', (evt)=>{
+    const t = evt.touches[0];
+    const rect = chartCanvas.getBoundingClientRect();
+    if(hitTestPoint(t.clientX - rect.left, t.clientY - rect.top, 22)){
+      draggingPoint = true;
+      evt.preventDefault();
     }
+  }, {passive:false});
+  window.addEventListener('touchmove', (evt)=>{
+    if(!draggingPoint) return;
+    const t = evt.touches[0];
+    const rect = chartCanvas.getBoundingClientRect();
+    placePointAt(leftChart.scales.x.getValueForPixel(t.clientX - rect.left));
+    evt.preventDefault();
+  }, {passive:false});
+  window.addEventListener('touchend', ()=>{ draggingPoint = false; });
+
+  // BUG FIX: reposition the label when the window/chart resizes
+  let resizeTimer;
+  window.addEventListener('resize', ()=>{
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(()=>{
+      const pt = leftChart.data.datasets[1].data[0];
+      if(pt){
+        leftChart.update('none');
+        placePointAt(pt.x);
+      }
+    }, 120);
   });
 
-  // also update when model changes: re-draw curve and place a reasonable default point (mid-range)
-  document.getElementById('left-model').addEventListener('change', ()=>{
-    leftUpdateChart();
-    const model = document.getElementById('left-model').value;
-    const info = models[model];
-    const mid = (info.range[0] + info.range[1]) / 2;
-    placePointAt(mid);
-  });
-
-  // initialize with mid point
+  // init left panel
   (function initLeft(){
-    const model = document.getElementById('left-model').value;
-    const info = models[model];
-    const mid = (info.range[0] + info.range[1]) / 2;
-    placePointAt(mid);
+    leftUpdateChart();
+    const info = models[document.getElementById('left-model').value];
+    placePointAt((info.range[0] + info.range[1]) / 2);
   })();
 
 
-  /********************* Morphology (right) *********************/
+  /********************* Morphology (right) — model unchanged *********************/
   const morphCanvas = document.getElementById('morphCanvas');
   const mctx = morphCanvas.getContext('2d');
 
   function lerp(a,b,t){ return Math.round(a + (b-a)*t); }
-  function rgbToCss(r,g,b){ return `rgb(${r},${g},${b})`; }
-  function mixRgb(c1,c2,t){ return rgbToCss( lerp(c1[0],c2[0],t), lerp(c1[1],c2[1],t), lerp(c1[2],c2[2],t) ); }
+  function rgbToCss(r,g,b){ return 'rgb('+r+','+g+','+b+')'; }
+  function mixRgb(c1,c2,t){ return rgbToCss(lerp(c1[0],c2[0],t),lerp(c1[1],c2[1],t),lerp(c1[2],c2[2],t)); }
 
   function hiToColor(hi){
-    const low = 30, mid = 40, high = 55;
-    const yellow = [255,243,128];
-    const orange = [255,167,79];
-    const red    = [255,80,80];
-    if(hi <= low) return rgbToCss(...yellow);
-    if(hi >= high) return rgbToCss(...red);
-    if(hi <= mid){
-      const t = (hi - low) / (mid - low);
-      return mixRgb(yellow, orange, t);
-    } else {
-      const t = (hi - mid) / (high - mid);
-      return mixRgb(orange, red, t);
-    }
+    const low=30, mid=40, high=55;
+    const yellow=[255,243,128], orange=[255,167,79], red=[255,80,80];
+    if(hi<=low) return rgbToCss(...yellow);
+    if(hi>=high) return rgbToCss(...red);
+    if(hi<=mid) return mixRgb(yellow,orange,(hi-low)/(mid-low));
+    return mixRgb(orange,red,(hi-mid)/(high-mid));
   }
-
+  function cssToRgbArray(css){
+    const m = css.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    return m ? [Number(m[1]),Number(m[2]),Number(m[3])] : [255,200,120];
+  }
   function stableRandom(x,y){
     const s = Math.sin(x*374761.1 + y*668265.7) * 43758.5453;
     return s - Math.floor(s);
   }
-
-  function mapRange(v, inMin, inMax, outMin, outMax){
-    const t = (v - inMin) / (inMax - inMin);
-    return outMin + t*(outMax - outMin);
+  function mapRange(v,inMin,inMax,outMin,outMax){
+    return outMin + ((v-inMin)/(inMax-inMin))*(outMax-outMin);
   }
 
   function drawMorphology(params){
-    const w = morphCanvas.width;
-    const h = morphCanvas.height;
+    const w = morphCanvas.width, h = morphCanvas.height;
     mctx.clearRect(0,0,w,h);
 
-    const cols = 22, rows = 14, margin = 12;
-    const availableW = w - margin*2, availableH = h - margin*2;
-    const baseCellW = Math.floor(availableW / cols), baseCellH = Math.floor(availableH / rows);
-    const cellW = Math.max(10, baseCellW - 2), cellH = Math.max(10, baseCellH - 2);
+    const cols=22, rows=14, margin=12;
+    const baseCellW = Math.floor((w-margin*2)/cols), baseCellH = Math.floor((h-margin*2)/rows);
+    const cellW = Math.max(10, baseCellW-2), cellH = Math.max(10, baseCellH-2);
 
-    const ar = params.ar;
-    const interval = Math.round( mapRange(ar, 0.5, 2.5, 5, 2) );
-    const roadBandPx = Math.max( Math.round( cellH * mapRange(ar, 0.5, 2.5, 0.35, 0.9) ), Math.round(cellH*0.25) );
+    const interval = Math.round(mapRange(params.ar,0.5,2.5,5,2));
+    const roadBandPx = Math.max(Math.round(cellH*mapRange(params.ar,0.5,2.5,0.35,0.9)), Math.round(cellH*0.25));
 
-    const gridWidth = cols * cellW, gridHeight = rows * cellH;
-    let offsetX = Math.round((w - gridWidth) / 2), offsetY = Math.round((h - gridHeight) / 2);
-    offsetX = Math.max(margin, offsetX); offsetY = Math.max(margin, offsetY);
+    const gridWidth = cols*cellW, gridHeight = rows*cellH;
+    let offsetX = Math.max(margin, Math.round((w-gridWidth)/2));
+    let offsetY = Math.max(margin, Math.round((h-gridHeight)/2));
 
-    // background white
     mctx.fillStyle = '#ffffff';
     mctx.fillRect(0,0,w,h);
 
-    // roads always grey
-    const roadColor = '#d9d9d9';
     const roadRows = new Set(), roadCols = new Set();
-    for(let r=0;r<rows;r++) if(r % interval === 0) roadRows.add(r);
-    for(let c=0;c<cols;c++) if(c % interval === 0) roadCols.add(c);
+    for(let r=0;r<rows;r++) if(r%interval===0) roadRows.add(r);
+    for(let c=0;c<cols;c++) if(c%interval===0) roadCols.add(c);
 
     mctx.save();
-    mctx.fillStyle = roadColor;
+    mctx.fillStyle = '#d9d9d9';
     for(const r of roadRows){
-      const y = offsetY + r * cellH - Math.floor((roadBandPx - cellH)/2);
-      mctx.fillRect(offsetX - 6, y, gridWidth + 12, roadBandPx);
+      const y = offsetY + r*cellH - Math.floor((roadBandPx-cellH)/2);
+      mctx.fillRect(offsetX-6, y, gridWidth+12, roadBandPx);
     }
     for(const c of roadCols){
-      const x = offsetX + c * cellW - Math.floor((roadBandPx - cellW)/2);
-      mctx.fillRect(x, offsetY - 6, roadBandPx, gridHeight + 12);
+      const x = offsetX + c*cellW - Math.floor((roadBandPx-cellW)/2);
+      mctx.fillRect(x, offsetY-6, roadBandPx, gridHeight+12);
     }
     mctx.restore();
 
-    // plot base color from VDR (brown -> green)
-    const brown = [232,210,186], green = [220,250,220];
-    const vdrT = Math.min(1, Math.max(0, params.vdr));
-    const plotBase = [ Math.round((1-vdrT)*brown[0] + vdrT*green[0]),
-                       Math.round((1-vdrT)*brown[1] + vdrT*green[1]),
-                       Math.round((1-vdrT)*brown[2] + vdrT*green[2]) ];
+    const brown=[232,210,186], green=[220,250,220];
+    const vdrT = Math.min(1,Math.max(0,params.vdr));
+    const plotBase = [lerp(brown[0],green[0],vdrT),lerp(brown[1],green[1],vdrT),lerp(brown[2],green[2],vdrT)];
+    const hiRgb = cssToRgbArray(hiToColor(params.hi||30));
 
-    // HI tint color
-    const hiRgb = cssToRgbArray(hiToColor(params.hi || 30));
-
-    // draw plots (non-road cells)
-    const occupancy = new Array(rows).fill(0).map(()=>new Array(cols).fill(false));
+    const occupancy = Array.from({length:rows},()=>new Array(cols).fill(false));
     for(let r=0;r<rows;r++){
       for(let c=0;c<cols;c++){
-        if(roadRows.has(r) || roadCols.has(c)) continue;
-        const x = offsetX + c * cellW;
-        const y = offsetY + r * cellH;
-        const blendT = Math.min(1, Math.max(0, mapRange(params.hi || 30, 30, 55, 0, 0.65)));
-        const rcol = Math.round(plotBase[0] * (1 - blendT) + hiRgb[0] * blendT);
-        const gcol = Math.round(plotBase[1] * (1 - blendT) + hiRgb[1] * blendT);
-        const bcol = Math.round(plotBase[2] * (1 - blendT) + hiRgb[2] * blendT);
-        mctx.fillStyle = `rgb(${rcol},${gcol},${bcol})`;
-        mctx.fillRect(x + 2, y + 2, cellW - 4, cellH - 4);
+        if(roadRows.has(r)||roadCols.has(c)) continue;
+        const x = offsetX+c*cellW, y = offsetY+r*cellH;
+        const blendT = Math.min(1,Math.max(0,mapRange(params.hi||30,30,55,0,0.65)));
+        mctx.fillStyle = 'rgb('+
+          Math.round(plotBase[0]*(1-blendT)+hiRgb[0]*blendT)+','+
+          Math.round(plotBase[1]*(1-blendT)+hiRgb[1]*blendT)+','+
+          Math.round(plotBase[2]*(1-blendT)+hiRgb[2]*blendT)+')';
+        mctx.fillRect(x+2,y+2,cellW-4,cellH-4);
       }
     }
 
-    // buildings: BSF controls density only (deterministic)
     for(let r=0;r<rows;r++){
       for(let c=0;c<cols;c++){
-        if(roadRows.has(r) || roadCols.has(c)) continue;
-        const x = offsetX + c * cellW;
-        const y = offsetY + r * cellH;
-        let p = params.bsf;
-        p += (stableRandom(r+3,c+7)-0.5)*0.06;
-        p = Math.min(0.98, Math.max(0.02, p));
-        const occ = (stableRandom(r*5+11,c*7+13) < p);
-        if(!occ) continue;
+        if(roadRows.has(r)||roadCols.has(c)) continue;
+        const x = offsetX+c*cellW, y = offsetY+r*cellH;
+        let p = params.bsf + (stableRandom(r+3,c+7)-0.5)*0.06;
+        p = Math.min(0.98,Math.max(0.02,p));
+        if(stableRandom(r*5+11,c*7+13) >= p) continue;
         occupancy[r][c] = true;
         const footprintScale = 0.6 - params.isf*0.35 + (stableRandom(r*3,c*7)-0.5)*0.12;
-        const bw = Math.max(6, Math.floor(cellW * footprintScale));
-        const bh = Math.max(6, Math.floor(cellH * footprintScale));
-        const baseHeightPx = Math.round(6 + (params.fdr - 0.1) * 6);
+        const bw = Math.max(6,Math.floor(cellW*footprintScale));
+        const bh = Math.max(6,Math.floor(cellH*footprintScale));
+        const baseHeightPx = Math.round(6 + (params.fdr-0.1)*6);
         const jitter = Math.round((stableRandom(r*11,c*13)-0.5)*4);
-        const heightVal = Math.max(2, baseHeightPx + jitter);
-        const shade = Math.max(40, 220 - Math.min(180, heightVal*8));
-        const tintFactor = Math.min(0.5, mapRange(params.hi || 30, 30, 55, 0, 0.6));
-        const rcol = Math.round(shade * (1 - tintFactor) + hiRgb[0] * tintFactor);
-        const gcol = Math.round(shade * (1 - tintFactor) + hiRgb[1] * tintFactor);
-        const bcol = Math.round(shade * (1 - tintFactor) + hiRgb[2] * tintFactor);
-        const color = `rgb(${rcol},${gcol},${bcol})`;
-        const px = x + Math.floor((cellW - bw)/2);
-        const py = y + Math.floor((cellH - bh)/2);
-        mctx.fillStyle = 'rgba(0,0,0,0.08)'; mctx.fillRect(px + 3, py + 3, bw, bh);
-        mctx.fillStyle = color; mctx.fillRect(px, py, bw, bh);
-        mctx.fillStyle = 'rgba(255,255,255,0.06)'; mctx.fillRect(px, py, bw, Math.max(2, Math.floor(bh*0.15)));
+        const heightVal = Math.max(2, baseHeightPx+jitter);
+        const shade = Math.max(40, 220 - Math.min(180,heightVal*8));
+        const tintFactor = Math.min(0.5,mapRange(params.hi||30,30,55,0,0.6));
+        const color = 'rgb('+
+          Math.round(shade*(1-tintFactor)+hiRgb[0]*tintFactor)+','+
+          Math.round(shade*(1-tintFactor)+hiRgb[1]*tintFactor)+','+
+          Math.round(shade*(1-tintFactor)+hiRgb[2]*tintFactor)+')';
+        const px = x+Math.floor((cellW-bw)/2), py = y+Math.floor((cellH-bh)/2);
+        mctx.fillStyle = 'rgba(0,0,0,0.08)'; mctx.fillRect(px+3,py+3,bw,bh);
+        mctx.fillStyle = color; mctx.fillRect(px,py,bw,bh);
+        mctx.fillStyle = 'rgba(255,255,255,0.06)'; mctx.fillRect(px,py,bw,Math.max(2,Math.floor(bh*0.15)));
       }
     }
 
-    // trees: uniformly distributed on empty plots; canopy larger as VDR increases
-    const canopyBase = Math.round(Math.min(cellW, cellH) * 0.10);
-    const canopyScale = mapRange(params.vdr, 0, 1, 1.0, 1.6);
-    const treeColorLow = [90,110,70], treeColorHigh = [32,140,50];
-    function treeColorByVdr(v){ return [ Math.round(treeColorLow[0] * (1-v) + treeColorHigh[0]*v ), Math.round(treeColorLow[1] * (1-v) + treeColorHigh[1]*v ), Math.round(treeColorLow[2] * (1-v) + treeColorHigh[2]*v ) ]; }
-    const tc = treeColorByVdr(params.vdr);
-    const treeThresh = mapRange(params.vdr, 0, 1, 0.02, 0.35);
+    const canopyBase = Math.round(Math.min(cellW,cellH)*0.10);
+    const canopyScale = mapRange(params.vdr,0,1,1.0,1.6);
+    const treeLow=[90,110,70], treeHigh=[32,140,50];
+    const tc = [lerp(treeLow[0],treeHigh[0],params.vdr),lerp(treeLow[1],treeHigh[1],params.vdr),lerp(treeLow[2],treeHigh[2],params.vdr)];
+    const treeThresh = mapRange(params.vdr,0,1,0.02,0.35);
     for(let r=0;r<rows;r++){
       for(let c=0;c<cols;c++){
-        if(roadRows.has(r) || roadCols.has(c)) continue;
-        if(occupancy[r][c]) continue;
-        const s = stableRandom(r*17+5, c*29+7);
-        if(s < treeThresh){
-          const x = offsetX + c * cellW;
-          const y = offsetY + r * cellH;
-          const cx = x + Math.floor(cellW*0.2 + stableRandom(r+10,c+20)*cellW*0.6);
-          const cy = y + Math.floor(cellH*0.2 + stableRandom(r+20,c+10)*cellH*0.6);
-          const tr = Math.max(5, Math.round(canopyBase * canopyScale + (stableRandom(r+3,c+4)-0.5)*2));
-          mctx.fillStyle = 'rgba(0,0,0,0.06)'; mctx.beginPath(); mctx.ellipse(cx+1, cy+1, tr*0.9, tr*0.5, 0, 0, 2*Math.PI); mctx.fill();
-          mctx.fillStyle = `rgb(${tc[0]},${tc[1]},${tc[2]})`; mctx.beginPath(); mctx.arc(cx, cy, tr, 0, Math.PI*2); mctx.fill();
+        if(roadRows.has(r)||roadCols.has(c)||occupancy[r][c]) continue;
+        if(stableRandom(r*17+5,c*29+7) < treeThresh){
+          const x = offsetX+c*cellW, y = offsetY+r*cellH;
+          const cx = x+Math.floor(cellW*0.2+stableRandom(r+10,c+20)*cellW*0.6);
+          const cy = y+Math.floor(cellH*0.2+stableRandom(r+20,c+10)*cellH*0.6);
+          const tr = Math.max(5,Math.round(canopyBase*canopyScale+(stableRandom(r+3,c+4)-0.5)*2));
+          mctx.fillStyle = 'rgba(0,0,0,0.06)';
+          mctx.beginPath(); mctx.ellipse(cx+1,cy+1,tr*0.9,tr*0.5,0,0,2*Math.PI); mctx.fill();
+          mctx.fillStyle = 'rgb('+tc[0]+','+tc[1]+','+tc[2]+')';
+          mctx.beginPath(); mctx.arc(cx,cy,tr,0,Math.PI*2); mctx.fill();
         }
       }
     }
 
-    // grid lines + border
     mctx.strokeStyle = 'rgba(0,0,0,0.03)';
     for(let r=0;r<=rows;r++){
-      const y = offsetY + r*cellH;
-      mctx.beginPath(); mctx.moveTo(offsetX, y); mctx.lineTo(offsetX + gridWidth, y); mctx.stroke();
+      const y = offsetY+r*cellH;
+      mctx.beginPath(); mctx.moveTo(offsetX,y); mctx.lineTo(offsetX+gridWidth,y); mctx.stroke();
     }
     for(let c=0;c<=cols;c++){
-      const x = offsetX + c*cellW;
-      mctx.beginPath(); mctx.moveTo(x, offsetY); mctx.lineTo(x, offsetY + gridHeight); mctx.stroke();
+      const x = offsetX+c*cellW;
+      mctx.beginPath(); mctx.moveTo(x,offsetY); mctx.lineTo(x,offsetY+gridHeight); mctx.stroke();
     }
     mctx.strokeStyle = 'rgba(0,0,0,0.06)'; mctx.strokeRect(0.5,0.5,w-1,h-1);
   }
 
-  // helper: parse rgb(...) into array
-  function cssToRgbArray(css){
-    const m = css.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-    if(!m) return [255,200,120];
-    return [Number(m[1]), Number(m[2]), Number(m[3])];
+  // ---- slider wiring ----
+  const ranges = {
+    bsf:document.getElementById('right-bsf-range'),
+    isf:document.getElementById('right-isf-range'),
+    vdr:document.getElementById('right-vdr-range'),
+    fdr:document.getElementById('right-fdr-range'),
+    ar :document.getElementById('right-ar-range')
+  };
+  const vals = {
+    bsf:document.getElementById('right-bsf-val'),
+    isf:document.getElementById('right-isf-val'),
+    vdr:document.getElementById('right-vdr-val'),
+    fdr:document.getElementById('right-fdr-val'),
+    ar :document.getElementById('right-ar-val')
+  };
+
+  // your derived HI equation — kept exactly as provided
+  function computeHI(p){
+    const intercept=40.0299, c_bsf=-5.9228, c_isf=8.7577, c_vdr=-1.1275, c_fdr=0.5785, c_ar=0.3972;
+    return intercept + c_bsf*p.bsf + c_isf*p.isf + c_vdr*p.vdr + c_fdr*p.fdr + c_ar*p.ar;
   }
 
-  /* ---------- slider wiring ---------- */
-  const bsfRange = document.getElementById('right-bsf-range');
-  const isfRange = document.getElementById('right-isf-range');
-  const vdrRange = document.getElementById('right-vdr-range');
-  const fdrRange = document.getElementById('right-fdr-range');
-  const arRange  = document.getElementById('right-ar-range');
-
-  const bsfVal = document.getElementById('right-bsf-val');
-  const isfVal = document.getElementById('right-isf-val');
-  const vdrVal = document.getElementById('right-vdr-val');
-  const fdrVal = document.getElementById('right-fdr-val');
-  const arVal  = document.getElementById('right-ar-val');
-
-  function computeHI(params){
-    const intercept = 40.0299, coef_bsf = -5.9228, coef_isf = 8.7577, coef_vdr = -1.1275, coef_fdr = 0.5785, coef_ar = 0.3972;
-    return intercept + coef_bsf*params.bsf + coef_isf*params.isf + coef_vdr*params.vdr + coef_fdr*params.fdr + coef_ar*params.ar;
+  function paintSliderFill(el){
+    const pct = (el.value - el.min) / (el.max - el.min) * 100;
+    el.style.setProperty('--fill', pct + '%');
   }
 
   function updateMorphFromSliders(){
-    const params = {
-      bsf: parseFloat(bsfRange.value),
-      isf: parseFloat(isfRange.value),
-      vdr: parseFloat(vdrRange.value),
-      fdr: parseFloat(fdrRange.value),
-      ar: parseFloat(arRange.value)
+    const p = {
+      bsf:parseFloat(ranges.bsf.value),
+      isf:parseFloat(ranges.isf.value),
+      vdr:parseFloat(ranges.vdr.value),
+      fdr:parseFloat(ranges.fdr.value),
+      ar :parseFloat(ranges.ar.value)
     };
-    params.hi = computeHI(params);
-    drawMorphology(params);
-    bsfVal.textContent = params.bsf.toFixed(2);
-    isfVal.textContent = params.isf.toFixed(2);
-    vdrVal.textContent = params.vdr.toFixed(2);
-    fdrVal.textContent = params.fdr.toFixed(2);
-    arVal.textContent  = params.ar.toFixed(2);
-    document.getElementById('right-result').innerText = `Predicted HI: ${params.hi.toFixed(2)}`;
-    // also update mortality chart's HI tint by updating left-side point label color via nothing needed here; left is independent
+    p.hi = computeHI(p);
+    drawMorphology(p);
+    vals.bsf.textContent = p.bsf.toFixed(2);
+    vals.isf.textContent = p.isf.toFixed(2);
+    vals.vdr.textContent = p.vdr.toFixed(2);
+    vals.fdr.textContent = p.fdr.toFixed(2);
+    vals.ar.textContent  = p.ar.toFixed(2);
+    document.getElementById('right-result').textContent = p.hi.toFixed(2) + ' °C';
+    // tint the HI readout across the same 30-55 °C scale as the morphology map
+    tintReadout(document.getElementById('right-readout'), (p.hi - 30) / (55 - 30));
+    Object.values(ranges).forEach(paintSliderFill);
   }
 
-  [bsfRange,isfRange,vdrRange,fdrRange,arRange].forEach(el=>{
-    el.addEventListener('input', ()=> updateMorphFromSliders());
+  Object.values(ranges).forEach(el=>{
+    el.addEventListener('input', updateMorphFromSliders);
   });
   document.getElementById('right-reset').addEventListener('click', ()=>{
-    bsfRange.value = 0.5; isfRange.value = 0.1; vdrRange.value = 0.3; fdrRange.value = 1.0; arRange.value = 1.0;
+    ranges.bsf.value=0.5; ranges.isf.value=0.1; ranges.vdr.value=0.3;
+    ranges.fdr.value=1.0; ranges.ar.value=1.0;
     updateMorphFromSliders();
   });
   document.getElementById('exportMorph').addEventListener('click', ()=>{
-    const link = document.createElement('a'); link.download='morphology-preview.png'; link.href = morphCanvas.toDataURL('image/png'); link.click();
+    const link = document.createElement('a');
+    link.download = 'morphology-preview.png';
+    link.href = morphCanvas.toDataURL('image/png');
+    link.click();
   });
 
-  // initial draws
   updateMorphFromSliders();
-
-  // touch support for dragging on small devices
-  chartCanvas.addEventListener('touchstart', (evt)=>{
-    if(!leftChart.data.datasets[1].data.length) return;
-    const touch = evt.touches[0];
-    const rect = chartCanvas.getBoundingClientRect();
-    const xPx = touch.clientX - rect.left;
-    const yPx = touch.clientY - rect.top;
-    const pt = leftChart.data.datasets[1].data[0];
-    const xPix = leftChart.scales.x.getPixelForValue(pt.x);
-    const yPix = leftChart.scales.y.getPixelForValue(pt.y);
-    const dx = xPx - xPix, dy = yPx - yPix;
-    if(Math.sqrt(dx*dx + dy*dy) < 18){
-      draggingPoint = true;
-      evt.preventDefault();
-    }
-  }, {passive:false});
-
-  window.addEventListener('touchmove', (evt)=>{
-    if(!draggingPoint) return;
-    const touch = evt.touches[0];
-    const rect = chartCanvas.getBoundingClientRect();
-    const clientX = touch.clientX;
-    const xPx = clientX - rect.left;
-    const xVal = leftChart.scales.x.getValueForPixel(xPx);
-    const model = document.getElementById('left-model').value;
-    const info = models[model];
-    let xv = xVal;
-    if(xv < info.range[0]) xv = info.range[0];
-    if(xv > info.range[1]) xv = info.range[1];
-    placePointAt(xv);
-    evt.preventDefault();
-  }, {passive:false});
-
-  window.addEventListener('touchend', ()=>{ draggingPoint = false; });
-
   </script>
 </body>
 </html>
