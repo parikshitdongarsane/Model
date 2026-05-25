@@ -1,12 +1,12 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<!DOCTYPE html>
+<!-- saved from url=(0076)file:///C:/Users/Parikshit/Downloads/mortality_morphology_interactive_1.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mortality &amp; Morphology — Interactive</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+<link rel="stylesheet" href="./Mortality &amp; Morphology — Interactive_files/css2">
 <style>
   :root{
     --bg:#f4f1ea;
@@ -431,16 +431,16 @@
             </div>
           </div>
 
-          <div class="readout" id="left-readout">
-            <span class="lbl">Probable mortalities</span>
-            <span class="val" id="left-mortalityResult">—</span>
+          <div class="readout" id="left-readout" style="background: linear-gradient(rgb(255, 245, 195), rgb(255, 237, 145)); border-color: rgb(255, 233, 121);">
+            <span class="lbl" style="color: rgb(119, 67, 20);">Probable mortalities</span>
+            <span class="val" id="left-mortalityResult" style="color: rgb(119, 67, 20);">50</span>
           </div>
           <p class="err" id="left-error"></p>
 
           <div class="chart-card">
             <div class="chartWrapper">
-              <canvas id="leftChart" aria-label="Mortality model prediction curve"></canvas>
-              <div id="pointLabel" class="pointLabel" style="display:none"></div>
+              <canvas id="leftChart" aria-label="Mortality model prediction curve" width="641" height="375" style="display: block; box-sizing: border-box; height: 300px; width: 512px;"></canvas>
+              <div id="pointLabel" class="pointLabel" style="display: block; left: 276.1px; top: 230.736px; transform: translate(-50%, -130%);"><strong>Temperature (°C):</strong> 40 &nbsp;·&nbsp; <strong>Mortalities:</strong> 50</div>
             </div>
           </div>
 
@@ -453,7 +453,7 @@
 
           <div class="equation">
             <h4>Polynomial model — degree 3</h4>
-            <p id="left-equation">Select a model to see its equation.</p>
+            <p id="left-equation">y = −1595.28 + 136.82·x − 3.78·x<sup>2</sup> + 0.0347·x<sup>3</sup></p>
           </div>
         </div>
       </section>
@@ -488,35 +488,35 @@
             </div>
           </div>
 
-          <div class="readout cool" id="right-readout">
-            <span class="lbl">Predicted Heat Index</span>
-            <span class="val" id="right-result">—</span>
+          <div class="readout cool" id="right-readout" style="background: linear-gradient(rgb(255, 226, 183), rgb(255, 203, 123)); border-color: rgb(255, 191, 94);">
+            <span class="lbl" style="color: rgb(117, 57, 20);">Predicted Heat Index</span>
+            <span class="val" id="right-result" style="color: rgb(117, 57, 20);">38.58 °C</span>
           </div>
 
           <div class="sliders" id="hiControls">
             <div class="sliderRow">
               <label>BSF<span class="sub">building surface</span></label>
-              <input type="range" id="right-bsf-range" min="0.05" max="0.95" step="0.01" value="0.50">
+              <input type="range" id="right-bsf-range" min="0.05" max="0.95" step="0.01" value="0.50" style="--fill: 50.000000000000014%;">
               <span class="sliderValue" id="right-bsf-val">0.50</span>
             </div>
             <div class="sliderRow">
               <label>ISF<span class="sub">impervious surface</span></label>
-              <input type="range" id="right-isf-range" min="0" max="1" step="0.01" value="0.10">
+              <input type="range" id="right-isf-range" min="0" max="1" step="0.01" value="0.10" style="--fill: 10%;">
               <span class="sliderValue" id="right-isf-val">0.10</span>
             </div>
             <div class="sliderRow">
               <label>VDR<span class="sub">vegetation density</span></label>
-              <input type="range" id="right-vdr-range" min="0" max="1" step="0.01" value="0.30">
+              <input type="range" id="right-vdr-range" min="0" max="1" step="0.01" value="0.30" style="--fill: 30%;">
               <span class="sliderValue" id="right-vdr-val">0.30</span>
             </div>
             <div class="sliderRow">
               <label>FDR<span class="sub">fabric density</span></label>
-              <input type="range" id="right-fdr-range" min="0.1" max="3.0" step="0.1" value="1.0">
+              <input type="range" id="right-fdr-range" min="0.1" max="3.0" step="0.1" value="1.0" style="--fill: 31.03448275862069%;">
               <span class="sliderValue" id="right-fdr-val">1.00</span>
             </div>
             <div class="sliderRow">
               <label>AR<span class="sub">aspect ratio</span></label>
-              <input type="range" id="right-ar-range" min="0.5" max="2.5" step="0.05" value="1.0">
+              <input type="range" id="right-ar-range" min="0.5" max="2.5" step="0.05" value="1.0" style="--fill: 25%;">
               <span class="sliderValue" id="right-ar-val">1.00</span>
             </div>
             <div style="margin-top:14px">
@@ -561,7 +561,7 @@
     </footer>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="./Mortality &amp; Morphology — Interactive_files/chart.umd.min.js.download"></script>
   <script>
   /********************* Mortality calculator (left) *********************/
   const models = {
@@ -1048,5 +1048,23 @@
 
   updateMorphFromSliders();
   </script>
-</body>
-</html>
+
+  <!-- ============================================================
+       VISITOR ANALYTICS — GoatCounter
+       ------------------------------------------------------------
+       SETUP (one-time):
+       1. Sign up at https://www.goatcounter.com  (free, non-commercial).
+       2. Choose a site code, e.g. "nagpur-heat".
+          Your dashboard will then be: nagpur-heat.goatcounter.com
+       3. In the line below, replace  YOUR_CODE_HERE  with that code.
+          Example: https://nagpur-heat.goatcounter.com/count
+       4. Host this file on a public URL (Cloudflare Pages / Netlify).
+       5. View visits, timestamps and country at your dashboard URL.
+
+       NOTE: This reports aggregate visits, time and rough (country-level)
+       location only — never the identity of individual visitors.
+       ============================================================ -->
+  <script data-goatcounter="https://YOUR_CODE_HERE.goatcounter.com/count" async="" src="file://gc.zgo.at/count.js"></script>
+
+
+</body></html>
