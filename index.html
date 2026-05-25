@@ -1,12 +1,12 @@
-<!DOCTYPE html>
-<!-- saved from url=(0076)file:///C:/Users/Parikshit/Downloads/mortality_morphology_interactive_3.html -->
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Mortality &amp; Morphology — Interactive</title>
-<link rel="preconnect" href="https://fonts.googleapis.com/">
-<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
-<link rel="stylesheet" href="./Mortality &amp; Morphology — Interactive_files/css2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
   :root{
     --bg:#f4f1ea;
@@ -431,16 +431,16 @@
             </div>
           </div>
 
-          <div class="readout" id="left-readout" style="background: linear-gradient(rgb(255, 219, 178), rgb(255, 189, 114)); border-color: rgb(255, 174, 83);">
-            <span class="lbl" style="color: rgb(115, 53, 20);">Probable mortalities</span>
-            <span class="val" id="left-mortalityResult" style="color: rgb(115, 53, 20);">85</span>
+          <div class="readout" id="left-readout">
+            <span class="lbl">Probable mortalities</span>
+            <span class="val" id="left-mortalityResult">—</span>
           </div>
           <p class="err" id="left-error"></p>
 
           <div class="chart-card">
             <div class="chartWrapper">
-              <canvas id="leftChart" aria-label="Mortality model prediction curve" width="641" height="375" style="display: block; box-sizing: border-box; height: 300px; width: 512px; cursor: crosshair;"></canvas>
-              <div id="pointLabel" class="pointLabel" style="display: block; left: 372.5px; top: 157.175px; transform: translate(-50%, -130%);"><strong>Temperature (°C):</strong> 46.72 &nbsp;·&nbsp; <strong>Mortalities:</strong> 85</div>
+              <canvas id="leftChart" aria-label="Mortality model prediction curve"></canvas>
+              <div id="pointLabel" class="pointLabel" style="display:none"></div>
             </div>
           </div>
 
@@ -453,7 +453,7 @@
 
           <div class="equation">
             <h4>Polynomial model — degree 3</h4>
-            <p id="left-equation">y = −1595.28 + 136.82·x − 3.78·x<sup>2</sup> + 0.0347·x<sup>3</sup></p>
+            <p id="left-equation">Select a model to see its equation.</p>
           </div>
         </div>
       </section>
@@ -488,35 +488,35 @@
             </div>
           </div>
 
-          <div class="readout cool" id="right-readout" style="background: linear-gradient(rgb(255, 228, 184), rgb(255, 207, 126)); border-color: rgb(255, 196, 98);">
-            <span class="lbl" style="color: rgb(117, 59, 20);">Predicted Heat Index</span>
-            <span class="val" id="right-result" style="color: rgb(117, 59, 20);">37.71 °C</span>
+          <div class="readout cool" id="right-readout">
+            <span class="lbl">Predicted Heat Index</span>
+            <span class="val" id="right-result">—</span>
           </div>
 
           <div class="sliders" id="hiControls">
             <div class="sliderRow">
               <label>BSF<span class="sub">building surface</span></label>
-              <input type="range" id="right-bsf-range" min="0.05" max="0.95" step="0.01" value="0.50" style="--fill: 50.000000000000014%;">
+              <input type="range" id="right-bsf-range" min="0.05" max="0.95" step="0.01" value="0.50">
               <span class="sliderValue" id="right-bsf-val">0.50</span>
             </div>
             <div class="sliderRow">
               <label>ISF<span class="sub">impervious surface</span></label>
-              <input type="range" id="right-isf-range" min="0" max="1" step="0.01" value="0.10" style="--fill: 0%;">
-              <span class="sliderValue" id="right-isf-val">0.00</span>
+              <input type="range" id="right-isf-range" min="0" max="1" step="0.01" value="0.10">
+              <span class="sliderValue" id="right-isf-val">0.10</span>
             </div>
             <div class="sliderRow">
               <label>VDR<span class="sub">vegetation density</span></label>
-              <input type="range" id="right-vdr-range" min="0" max="1" step="0.01" value="0.30" style="--fill: 30%;">
+              <input type="range" id="right-vdr-range" min="0" max="1" step="0.01" value="0.30">
               <span class="sliderValue" id="right-vdr-val">0.30</span>
             </div>
             <div class="sliderRow">
               <label>FDR<span class="sub">fabric density</span></label>
-              <input type="range" id="right-fdr-range" min="0.1" max="3.0" step="0.1" value="1.0" style="--fill: 31.03448275862069%;">
+              <input type="range" id="right-fdr-range" min="0.1" max="3.0" step="0.1" value="1.0">
               <span class="sliderValue" id="right-fdr-val">1.00</span>
             </div>
             <div class="sliderRow">
               <label>AR<span class="sub">aspect ratio</span></label>
-              <input type="range" id="right-ar-range" min="0.5" max="2.5" step="0.05" value="1.0" style="--fill: 25%;">
+              <input type="range" id="right-ar-range" min="0.5" max="2.5" step="0.05" value="1.0">
               <span class="sliderValue" id="right-ar-val">1.00</span>
             </div>
             <div style="margin-top:14px">
@@ -1098,7 +1098,7 @@
        NOTE: This reports aggregate visits, time and rough (country-level)
        location only — never the identity of individual visitors.
        ============================================================ -->
-  <script data-goatcounter="https://parikshit.goatcounter.com/count" async="" src="file://gc.zgo.at/count.js"></script>
-
-
-</body></html>
+  <script data-goatcounter="https://parikshit.goatcounter.com/count"
+          async src="https://gc.zgo.at/count.js"></script>
+</body>
+</html>
